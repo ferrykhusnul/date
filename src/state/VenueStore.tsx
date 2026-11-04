@@ -96,9 +96,13 @@ export function VenueStoreProvider({ children }: { children: ReactNode }) {
     return [...merged, ...added];
   }, [localVenues]);
 
-  const venues = useMemo(() => [...realVenues, ...SAMPLE_VENUES], [realVenues]);
+  const venues = realVenues;
 
-  const getVenue = useCallback((id: string) => venues.find((v) => v.id === id), [venues]);
+  // Sample venues are only looked up so plans saved by older versions still render.
+  const getVenue = useCallback(
+    (id: string) => realVenues.find((v) => v.id === id) ?? SAMPLE_VENUES.find((v) => v.id === id),
+    [realVenues],
+  );
 
   const sourceOf = useCallback(
     (id: string): VenueSource | undefined => {

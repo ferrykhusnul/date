@@ -22,9 +22,9 @@ export default defineConfig({
       includeManifestIcons: false,
       manifest: {
         id: base,
-        name: 'Date Planner',
-        short_name: 'Date Planner',
-        description: 'Rencanakan kencan di Jakarta dan kota lain — rencana dan venue tersimpan di perangkatmu, bisa dipakai offline.',
+        name: 'A Day With Us',
+        short_name: 'ADWU',
+        description: 'A Day With Us — rencanain date manis di Jakarta dari tempat-tempat nyata. Semua tersimpan di perangkatmu dan bisa dipakai offline.',
         lang: 'id',
         dir: 'ltr',
         start_url: base,

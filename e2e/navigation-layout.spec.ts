@@ -8,10 +8,10 @@ test('every navigation link and route works', async ({ page, consoleErrors }) =>
   await page.goto('/');
   const targets: [string, RegExp, string][] = [
     ['Bikin', /\/buat$/, 'Mau date di mana?'],
-    ['Tersimpan', /\/tersimpan$/, 'Date tersimpan'],
+    ['Tersimpan', /\/tersimpan$/, 'Our little plans'],
     ['Tempat', /\/venue$/, 'Tempat'],
     ['Setelan', /\/pengaturan$/, 'Setelan'],
-    ['Beranda', /\/$/, 'Mau date ke mana nih?'],
+    ['Beranda', /\/$/, 'A Day With Us'],
   ];
   for (const [label, url, heading] of targets) {
     await (await navLink(page, label)).click();

@@ -17,21 +17,17 @@ import type { Environment, VenueStatus } from '../types';
 const PRICE_LIMITS = [50_000, 100_000, 200_000, 500_000];
 
 export function VenueList() {
-  const { venues, realVenues } = useVenues();
+  const { realVenues: venues } = useVenues();
   const [params] = useSearchParams();
   const [filter, setFilter] = useState<VenueFilter>(() => ({
     ...EMPTY_FILTER,
     city: params.get('kota') ?? '',
-    includeSamples: params.get('sampel') === '1',
   }));
 
   const set = <K extends keyof VenueFilter>(key: K, value: VenueFilter[K]) =>
     setFilter((f) => ({ ...f, [key]: value }));
 
-  const cityOptions = useMemo(
-    () => citiesOf(filter.includeSamples ? venues : realVenues),
-    [venues, realVenues, filter.includeSamples],
-  );
+  const cityOptions = useMemo(() => citiesOf(venues), [venues]);
   const results = useMemo(() => filterVenues(venues, filter), [venues, filter]);
   const activeFilters = (Object.keys(EMPTY_FILTER) as (keyof VenueFilter)[]).filter(
     (k) => k !== 'includeSamples' && filter[k] !== EMPTY_FILTER[k],
@@ -102,30 +98,18 @@ export function VenueList() {
           </div>
         </div>
         <div className="filter-foot">
-          <label className="switch">
-            <input type="checkbox" checked={filter.includeSamples}
-              onChange={(e) => set('includeSamples', e.target.checked)} />
-            <span>Tampilkan tempat contoh</span>
-          </label>
           <button type="button" className="button button-ghost button-sm" disabled={activeFilters === 0}
-            onClick={() => setFilter((f) => ({ ...EMPTY_FILTER, includeSamples: f.includeSamples }))}>
+            onClick={() => setFilter(EMPTY_FILTER)}>
             Reset filter
           </button>
         </div>
       </details>
 
-      {realVenues.length === 0 && !filter.includeSamples ? (
+      {venues.length === 0 ? (
         <EmptyState
           title="Belum ada tempat nih ♡"
-          body="Tambahin tempat yang udah kamu cek di Google Maps, atau lihat contoh dulu."
-          actions={
-            <>
-              <Link to="/venue/baru" className="button button-primary">Tambah tempat</Link>
-              <button type="button" className="button button-ghost" onClick={() => set('includeSamples', true)}>
-                Lihat contoh
-              </button>
-            </>
-          }
+          body="Tambahin tempat yang udah kamu cek di Google Maps."
+          actions={<Link to="/venue/baru" className="button button-primary">Tambah tempat</Link>}
         />
       ) : results.length === 0 ? (
         <EmptyState
@@ -133,7 +117,7 @@ export function VenueList() {
           body="Coba longgarin filternya."
           actions={
             <button type="button" className="button button-ghost"
-              onClick={() => setFilter((f) => ({ ...EMPTY_FILTER, includeSamples: f.includeSamples }))}>
+              onClick={() => setFilter(EMPTY_FILTER)}>
               Reset filter
             </button>
           }

@@ -28,7 +28,7 @@ export function Layout() {
       <aside className="sidebar" aria-label="Navigasi utama">
         <div className="brand">
           <span className="brand-mark" aria-hidden="true"><Icon name="heart" size={18} /></span>
-          <span className="brand-name">Date Planner</span>
+          <span className="brand-name">A Day With Us</span>
         </div>
         <nav className="sidebar-nav">
           {NAV_ITEMS.map((item) => (

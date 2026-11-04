@@ -14,7 +14,7 @@ const TIME_TABS: { value: PlanFilter['time']; label: string }[] = [
 ];
 
 export function SavedDates() {
-  const { savedPlans, deletePlan, duplicatePlan, loadSamplePlans } = useAppState();
+  const { savedPlans, deletePlan, duplicatePlan } = useAppState();
   const [filter, setFilter] = useState<PlanFilter>(EMPTY_PLAN_FILTER);
   const [status, setStatus] = useState('');
 
@@ -38,16 +38,15 @@ export function SavedDates() {
 
   return (
     <div className="page">
-      <PageHeader title="Date tersimpan" lead={savedPlans.length ? `${savedPlans.length} date di perangkat ini` : undefined} />
+      <PageHeader title="Our little plans" lead={savedPlans.length ? `${savedPlans.length} date di perangkat ini` : undefined} />
 
       {savedPlans.length === 0 ? (
         <EmptyState
-          title="Belum ada date nih ♡"
+          title="Belum ada cerita nih ♡"
           body="Simpan date dari halaman hasil biar gampang dibuka lagi."
           actions={
             <>
               <Link to="/buat" className="button button-primary">Bikin date pertama</Link>
-              <button type="button" className="button button-ghost" onClick={loadSamplePlans}>Lihat contoh</button>
               <Link to="/cadangan" className="button button-ghost">Pulihkan cadangan</Link>
             </>
           }

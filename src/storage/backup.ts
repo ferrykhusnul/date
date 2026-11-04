@@ -37,7 +37,7 @@ export function buildBackup(data: AppData, now: Date = new Date()): BackupFile {
 }
 
 export function backupFileName(now: Date = new Date()): string {
-  return `date-planner-cadangan-${now.toISOString().slice(0, 10)}.json`;
+  return `a-day-with-us-cadangan-${now.toISOString().slice(0, 10)}.json`;
 }
 
 export function serializeBackup(file: BackupFile): string {
@@ -75,13 +75,13 @@ const isRec = (x: unknown): x is Record<string, unknown> => Boolean(x) && typeof
 /** Strictly validates a backup file's text. Malformed files are rejected whole. */
 export function parseBackup(text: string): BackupParseResult {
   if (new Blob([text]).size > MAX_BACKUP_BYTES)
-    return { ok: false, error: 'File terlalu besar untuk cadangan Date Planner (maksimal 5 MB).' };
+    return { ok: false, error: 'File terlalu besar untuk cadangan A Day With Us (maksimal 5 MB).' };
   if (!text.trim()) return { ok: false, error: 'File kosong.' };
   const parsed = safeJsonParse(text);
   if (!parsed.ok) return { ok: false, error: 'File ini bukan JSON yang valid.' };
   const root = parsed.value;
   if (!isRec(root) || root.app !== APP_ID || root.kind !== BACKUP_KIND)
-    return { ok: false, error: 'File ini bukan cadangan Date Planner.' };
+    return { ok: false, error: 'File ini bukan cadangan A Day With Us.' };
   if (!Number.isInteger(root.schemaVersion) || (root.schemaVersion as number) < 1)
     return { ok: false, error: 'Versi skema cadangan tidak valid.' };
   const version = root.schemaVersion as number;

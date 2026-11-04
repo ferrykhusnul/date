@@ -9,7 +9,7 @@ import { PriceEstimate } from '../components/PriceEstimate';
 import { SampleBadge, SampleNotice } from '../components/SampleBadge';
 import { formatDateLong, formatDuration } from '../lib/format';
 import { categoryLabel } from '../lib/options';
-import { activityLabel, environmentLabel, moodLabel } from '../lib/uiLabels';
+import { activityLabel, environmentLabel, moodLabel, PRICE_CONFIDENCE_LABEL, PRICE_TYPE_LABEL } from '../lib/uiLabels';
 import { useVenues } from '../state/VenueStore';
 
 const SOURCE_LABEL = {
@@ -60,6 +60,7 @@ export function VenueDetail() {
         <span className={venue.status === 'active' ? 'verified-badge' : 'status-badge'}>
           {venue.status === 'active' ? 'Aktif' : 'Nonaktif'}
         </span>
+        {venue.needsVerification && <span className="status-badge">Perlu dicek</span>}
         {source && <span className="tag">{SOURCE_LABEL[source]}{overridden ? ' · diubah' : ''}</span>}
       </div>
 
@@ -105,7 +106,14 @@ export function VenueDetail() {
         </div>
         <div>
           <dt>Harga kira-kira</dt>
-          <dd><PriceEstimate min={venue.priceMin} max={venue.priceMax} unknown={venue.priceUnknown} /></dd>
+          <dd className="price-detail">
+            <span>
+              <PriceEstimate min={venue.priceMin} max={venue.priceMax} unknown={venue.priceUnknown} />
+              {venue.priceType && !venue.priceUnknown && <span className="muted small"> · {PRICE_TYPE_LABEL[venue.priceType]}</span>}
+            </span>
+            {venue.priceConfidence && <span className="tag">{PRICE_CONFIDENCE_LABEL[venue.priceConfidence]}</span>}
+            {venue.priceNote && <span className="field-hint block">{venue.priceNote}</span>}
+          </dd>
         </div>
         <div>
           <dt>Biasanya berapa lama</dt>
@@ -129,9 +137,29 @@ export function VenueDetail() {
             <dd className="mono">{venue.latitude}, {venue.longitude}</dd>
           </div>
         )}
+        {(venue.sourceUrl || venue.sourceName) && (
+          <div>
+            <dt>Sumber info</dt>
+            <dd>
+              {venue.sourceUrl ? (
+                <a href={venue.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-link">
+                  {venue.sourceName ?? 'Buka sumber'}
+                </a>
+              ) : (
+                venue.sourceName
+              )}
+            </dd>
+          </div>
+        )}
         <div>
           <dt>Dicek</dt>
-          <dd>{venue.verifiedAt ? formatDateLong(venue.verifiedAt) : 'Belum dicek'}</dd>
+          <dd>
+            {venue.verifiedAt
+              ? formatDateLong(venue.verifiedAt)
+              : venue.lastCheckedAt
+                ? `Sumber dicek ${formatDateLong(venue.lastCheckedAt)} · belum dicek langsung di Maps`
+                : 'Belum dicek'}
+          </dd>
         </div>
       </dl>
 

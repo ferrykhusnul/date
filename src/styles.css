@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Date Planner — "blush" design system
+   A Day With Us — "blush" design system
    Soft, romantic, mobile-first. Tokens first, then base, layout, components.
    ========================================================================== */
 
@@ -3495,4 +3495,19 @@ h3 {
   * {
     transition: none !important;
   }
+}
+
+/* Venue price details (type, confidence, note) */
+.price-detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+.home-tagline {
+  margin: 4px 0 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--text-muted);
 }

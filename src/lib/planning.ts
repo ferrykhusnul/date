@@ -1,11 +1,11 @@
-import { SAMPLE_VENUES } from '../data/sampleVenues';
 import { generateItinerary, type GenerationResult } from '../engine/generator';
 import type { DateInput, Settings, Venue } from '../types';
 import { plannableVenues } from './venueFilters';
 
 /**
- * Thin wrapper the UI uses to call the (unchanged) generator: decides between
- * real venues for the city and the sample fallback, exactly as before.
+ * Thin wrapper the UI uses to call the (unchanged) generator with the real
+ * venues for the chosen city. Sample venues are no longer used for new plans;
+ * `settings.useSampleVenues` is kept in storage for compatibility only.
  */
 export function planFromInput(
   input: DateInput,
@@ -17,9 +17,8 @@ export function planFromInput(
     exclude?: Set<string>;
   },
 ): GenerationResult & { usesSampleVenues: boolean } {
-  const cityPool = plannableVenues(opts.realVenues, input.city);
-  const usesSampleVenues = cityPool.length === 0;
-  const base = usesSampleVenues ? (opts.settings.useSampleVenues ? SAMPLE_VENUES : []) : opts.realVenues;
+  const usesSampleVenues = false;
+  const base = plannableVenues(opts.realVenues, input.city).length ? opts.realVenues : [];
   const venues = opts.exclude?.size ? base.filter((v) => !opts.exclude!.has(v.id)) : base;
   const result = generateItinerary(input, venues, {
     planId: opts.planId,

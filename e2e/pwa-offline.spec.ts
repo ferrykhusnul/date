@@ -22,7 +22,7 @@ test.describe('PWA', () => {
       return { contentType: res.headers.get('content-type'), json, icons };
     });
     expect(manifest.contentType).toContain('application/manifest+json');
-    expect(manifest.json).toMatchObject({ name: 'Date Planner', short_name: 'Date Planner', display: 'standalone', start_url: '/', scope: '/', theme_color: '#fdf7f5', background_color: '#fdf7f5' });
+    expect(manifest.json).toMatchObject({ name: 'A Day With Us', short_name: 'ADWU', display: 'standalone', start_url: '/', scope: '/', theme_color: '#fdf7f5', background_color: '#fdf7f5' });
     for (const icon of manifest.icons) {
       expect(icon.status).toBe(200);
       expect(icon.actual).toBe(icon.sizes);

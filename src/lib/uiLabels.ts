@@ -1,5 +1,5 @@
 import type { IconName } from '../components/Icon';
-import type { Activity, Environment, LegMode, Transportation, Vibe } from '../types';
+import type { Activity, Environment, LegMode, Transportation, Venue, Vibe } from '../types';
 
 /**
  * Casual, UI-only labels and icons. The engine keeps its own labels in
@@ -111,3 +111,17 @@ export const UI_ENVIRONMENT_OPTIONS = [
 export const activityLabel = (a: string) => ACTIVITIES_UI.find((x) => x.value === a)?.label ?? a;
 export const moodLabel = (v: string) => MOODS.find((x) => x.value === v)?.label ?? v;
 export const environmentLabel = (e: string) => UI_ENVIRONMENT_OPTIONS.find((x) => x.value === e)?.label ?? e;
+
+/** What a venue's price range stands for. */
+export const PRICE_TYPE_LABEL: Record<NonNullable<Venue['priceType']>, string> = {
+  free: 'Masuk gratis',
+  ticket: 'Tiket masuk',
+  purchase_required: 'Jajan/makan per orang',
+};
+
+/** How sure we are about the price. */
+export const PRICE_CONFIDENCE_LABEL: Record<NonNullable<Venue['priceConfidence']>, string> = {
+  verified: 'Harga dari pengelola',
+  estimated: 'Harga perkiraan',
+  unknown: 'Harga belum diketahui',
+};

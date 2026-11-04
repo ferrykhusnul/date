@@ -133,14 +133,6 @@ export function Settings() {
               {TRANSPORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
-          <label className="switch">
-            <input type="checkbox" checked={values.useSampleVenues}
-              onChange={(e) => { setValues({ ...values, useSampleVenues: e.target.checked }); setStatus(''); }} />
-            <span>
-              Pakai tempat contoh kalau di kota itu belum ada tempat
-              <span className="field-hint block">Selalu ditandai "Contoh".</span>
-            </span>
-          </label>
           <div className="form-actions inline">
             <button type="submit" className="button button-primary" disabled={!dirty || !valid}>Simpan</button>
             <button type="button" className="button button-ghost" onClick={() => { setValues(DEFAULT_SETTINGS); setStatus(''); }}>Reset</button>

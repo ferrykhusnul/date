@@ -17,7 +17,7 @@ test('no serious or critical axe violations', async ({ page, consoleErrors }) =>
   const report: string[] = [];
   const planPath = new URL(page.url()).pathname;
   for (const scheme of ['light', 'dark'] as const) {
-  await page.emulateMedia({ colorScheme: scheme });
+  await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
   for (const path of [...ROUTES, planPath]) {
     await page.goto(path);
     await expect(page.locator('h1, .empty-state h2').first()).toBeVisible();

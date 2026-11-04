@@ -4,16 +4,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#fdf7f5" />
-    <meta name="description" content="Rencanakan kencan di Jakarta dan kota lain — rencana dan venue tersimpan di perangkatmu, bisa dipakai offline." />
+    <meta name="description" content="A Day With Us — rencanain date manis di Jakarta dari tempat-tempat nyata. Semua tersimpan di perangkatmu dan bisa dipakai offline." />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Date Planner" />
+    <meta name="apple-mobile-web-app-title" content="ADWU" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
-    <title>Date Planner</title>
+    <meta name="application-name" content="A Day With Us" />
+    <meta property="og:title" content="A Day With Us" />
+    <meta property="og:description" content="Let's make some memories ♡" />
+    <title>A Day With Us</title>
+    <style>
+      /* Splash shown until the app renders (replaced by React). */
+      .adwu-splash { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: #fdf7f5; color: #44343b; font-family: Georgia, serif; text-align: center; padding: 16px; }
+      .adwu-splash-heart { color: #c68fa2; font-size: 34px; animation: adwu-beat 1.4s ease-in-out infinite; }
+      .adwu-splash-title { font-size: 30px; font-weight: 600; margin: 0; }
+      .adwu-splash-sub { font-style: italic; color: #98717d; margin: 0; }
+      @keyframes adwu-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+      @media (prefers-reduced-motion: reduce) { .adwu-splash-heart { animation: none; } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="adwu-splash" role="status" aria-label="Memuat A Day With Us">
+        <span class="adwu-splash-heart" aria-hidden="true">♡</span>
+        <p class="adwu-splash-title">A Day With Us</p>
+        <p class="adwu-splash-sub">Let's make some memories</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

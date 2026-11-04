@@ -1,5 +1,4 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { buildSamplePlans } from '../data/samplePlans';
 import { recalculate, type VenueLookup } from '../engine/itinerary';
 import { DEFAULT_PREFERENCES, DEFAULT_SETTINGS } from '../storage/defaults';
 import { loadCollection, loadValue, persist } from '../storage/persisted';
@@ -40,7 +39,6 @@ interface AppState {
   renamePlan: (id: string, name: string) => void;
   duplicatePlan: (id: string) => DatePlan | null;
   deletePlan: (id: string) => void;
-  loadSamplePlans: () => void;
   clearSavedPlans: () => void;
   getSavedPlan: (id: string) => DatePlan | undefined;
   /** Replaces plans, settings and preferences at once (backup import / restore). */
@@ -157,8 +155,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const deletePlan = useCallback((id: string) => setSavedPlans((prev) => prev.filter((p) => p.id !== id)), [setSavedPlans]);
 
-  const loadSamplePlans = useCallback(() => setSavedPlans((prev) => [...prev, ...buildSamplePlans()]), [setSavedPlans]);
-
   const clearSavedPlans = useCallback(() => setSavedPlans([]), [setSavedPlans]);
 
   const getSavedPlan = useCallback((id: string) => savedPlans.find((p) => p.id === id), [savedPlans]);
@@ -195,12 +191,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       renamePlan,
       duplicatePlan,
       deletePlan,
-      loadSamplePlans,
       clearSavedPlans,
       getSavedPlan,
       replaceData,
     }),
-    [settings, setSettings, preferences, setPreferences, draft, setDraft, formSeed, savedPlans, savePlan, updateSavedPlan, renamePlan, duplicatePlan, deletePlan, loadSamplePlans, clearSavedPlans, getSavedPlan, replaceData],
+    [settings, setSettings, preferences, setPreferences, draft, setDraft, formSeed, savedPlans, savePlan, updateSavedPlan, renamePlan, duplicatePlan, deletePlan, clearSavedPlans, getSavedPlan, replaceData],
   );
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

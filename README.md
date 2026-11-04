@@ -1,6 +1,28 @@
-# Date Planner
+# A Day With Us
 
-Mobile-first date planning app (React + TypeScript + Vite).
+*Let's make some memories ♡* — a mobile-first date planning PWA for Jakarta
+(React + TypeScript + Vite). Short name: **ADWU**.
+
+## Rebrand & real Jakarta venues
+
+- **Branding:** "A Day With Us" in the header, home screen, document title,
+  manifest (`name` "A Day With Us", `short_name` "ADWU"), splash screen
+  (inline in `index.html`, shown until React renders) and backup file names
+  (`a-day-with-us-cadangan-YYYY-MM-DD.json`). Internal identifiers (storage
+  keys `date-planner.*`, backup `app: 'date-planner'`, package name) are
+  unchanged so existing data and backups keep working.
+- **Venue dataset:** `src/data/venues.ts` holds 96 real Jakarta venues
+  (88 active, 8 inactive pending verification) across all five areas. Each
+  record cites its source (`sourceUrl`/`sourceName`), states what the price
+  means (`priceType`: free / ticket / purchase_required) and how sure it is
+  (`priceConfidence`: verified / estimated / unknown), and carries
+  `lastCheckedAt`. No coordinates are stored (none were sourced) and
+  `verifiedAt` stays empty until someone checks the Google Maps listing.
+  Transit access is only listed when a source states it. Rules and raw notes:
+  `research/notes.md`; checks: `src/data/venues.test.ts`.
+- **Sample venues** are no longer listed or used for new plans;
+  `src/data/sampleVenues.ts` remains only so plans saved by older versions
+  still open.
 
 ## Design: "blush" redesign
 
@@ -46,10 +68,10 @@ dependencies have none).
 
 ## Phase 6 — PWA & offline
 
-Date Planner is an installable Progressive Web App (Android/Chrome
+A Day With Us is an installable Progressive Web App (Android/Chrome
 "Instal aplikasi"), built with `vite-plugin-pwa` (Workbox `generateSW`).
 
-- **Manifest** (`vite.config.ts`): name/short name "Date Planner",
+- **Manifest** (`vite.config.ts`): name "A Day With Us", short name "ADWU",
   `display: standalone`, theme and background `#f6f1ea`, `lang: id`,
   192/512 icons plus a 512 maskable icon. Icons are rendered from SVG by
   `scripts/generate-icons.mjs` (Playwright) and committed in `public/`.
@@ -162,17 +184,15 @@ are not optimised.
   price range, visit duration, vibes, activities, environment, optional
   coordinates, Google Maps listing URL, optional transit access,
   `verifiedAt`, `active`/`inactive` status).
-- **Curated dataset:** `src/data/venues.ts`. It is **empty on purpose**: no
-  verified venue data was available, and venue details are never invented.
+- **Curated dataset:** `src/data/venues.ts` — real Jakarta venues with sources
+  (see "Rebrand & real Jakarta venues" above). Venue details are never invented.
 - **Local venues:** added or edited in the app (`/venue/baru`,
   `/venue/:id/ubah`) and stored in this browser's `localStorage`. An edit to a
   curated venue is kept as a local override that can be reverted. Settings →
   "Ekspor JSON" downloads the records so reviewed venues can be copied into
   `src/data/venues.ts`.
-- **Sample venues:** `src/data/sampleVenues.ts`, marked `isSample: true`,
-  read-only, city "Kota Sampel". The planner uses them only when a city has
-  no active real venue and the Settings toggle allows it; such plans are
-  labeled "Venue sampel".
+- **Sample venues (legacy):** `src/data/sampleVenues.ts`, marked `isSample: true`.
+  Only used to display plans saved by earlier versions.
 - **Filtering:** `src/lib/venueFilters.ts` (city, category, activity, vibe,
   environment, max starting price, status, text search).
 - All prices are shown as estimates ("Perkiraan … /orang").
@@ -271,7 +291,7 @@ Build and deployment → Source: GitHub Actions**.
 1. Open the deployed HTTPS URL in **Chrome**.
 2. Use **Pengaturan → Aplikasi & offline → Pasang aplikasi**, or Chrome's
    menu **⋮ → Instal aplikasi / Tambahkan ke layar utama**.
-3. Open Date Planner from the home screen. After the first load it works
+3. Open A Day With Us (ADWU) from the home screen. After the first load it works
    offline.
 
 On iOS (Safari): Share → **Tambahkan ke Layar Utama**.

@@ -125,6 +125,16 @@ export function parseStoredVenue(raw: unknown): Venue | null {
         : isStr(r.transitAccess) && r.transitAccess
           ? r.transitAccess
           : undefined,
+    priceType: r.priceType === 'free' || r.priceType === 'ticket' || r.priceType === 'purchase_required' ? r.priceType : undefined,
+    priceConfidence:
+      r.priceConfidence === 'verified' || r.priceConfidence === 'estimated' || r.priceConfidence === 'unknown'
+        ? r.priceConfidence
+        : undefined,
+    priceNote: isStr(r.priceNote) && r.priceNote ? r.priceNote : undefined,
+    sourceUrl: isStr(r.sourceUrl) && /^https:\/\//.test(r.sourceUrl) ? r.sourceUrl : undefined,
+    sourceName: isStr(r.sourceName) && r.sourceName ? r.sourceName : undefined,
+    lastCheckedAt: isStr(r.lastCheckedAt) && DATE_RE.test(r.lastCheckedAt) ? r.lastCheckedAt : undefined,
+    needsVerification: r.needsVerification === true ? true : undefined,
   };
   return venue;
 }

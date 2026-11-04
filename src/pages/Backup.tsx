@@ -62,7 +62,7 @@ export function Backup() {
     setError('');
     if (!file) return;
     if (file.size > MAX_BACKUP_BYTES) {
-      setError('File terlalu besar untuk cadangan Date Planner (maksimal 5 MB).');
+      setError('File terlalu besar untuk cadangan A Day With Us (maksimal 5 MB).');
       return;
     }
     let text: string;

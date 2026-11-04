@@ -29,7 +29,7 @@ test('invalid, foreign and newer backups are rejected without touching data', as
   const before = await page.evaluate(() => localStorage.getItem('date-planner.venues'));
   const cases: [string, string, RegExp][] = [
     ['bad.json', '{"not": json', /bukan JSON yang valid/],
-    ['foreign.json', JSON.stringify({ hello: 'world' }), /bukan cadangan Date Planner/],
+    ['foreign.json', JSON.stringify({ hello: 'world' }), /bukan cadangan A Day With Us/],
     ['newer.json', JSON.stringify({ app: 'date-planner', kind: 'backup', schemaVersion: 99, data: {} }), /versi aplikasi yang lebih baru/],
     ['empty.json', JSON.stringify({ app: 'date-planner', kind: 'backup', schemaVersion: 1, data: { plans: [] } }), /tidak berisi data/],
   ];

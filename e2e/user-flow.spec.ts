@@ -16,7 +16,7 @@ test('complete user flow', async ({ page, context, consoleErrors }, testInfo) =>
 
   // 1. Create date (from the home call-to-action)
   await page.goto('/');
-  await page.getByRole('link', { name: /Bikin date baru/ }).click();
+  await page.getByRole('link', { name: /^Bikin date 6 pertanyaan/ }).click();
   await expect(page).toHaveURL(/\/buat$/);
 
   // 2–3. Answer the wizard and generate the itinerary
@@ -98,7 +98,7 @@ test('complete user flow', async ({ page, context, consoleErrors }, testInfo) =>
   // 11. Export backup
   await page.goto('/cadangan');
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Unduh cadangan' }).click()]);
-  expect(download.suggestedFilename()).toMatch(/^date-planner-cadangan-\d{4}-\d{2}-\d{2}\.json$/);
+  expect(download.suggestedFilename()).toMatch(/^a-day-with-us-cadangan-\d{4}-\d{2}-\d{2}\.json$/);
   const backupPath = testInfo.outputPath('backup.json');
   await download.saveAs(backupPath);
   const backup = JSON.parse(readFileSync(backupPath, 'utf8'));

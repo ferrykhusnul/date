@@ -77,7 +77,24 @@ export interface Venue {
    * the venue's cost is never estimated or counted as a number.
    */
   priceUnknown?: boolean;
+  /** What the price range means: free entry, an entry ticket, or spending on food/drinks. */
+  priceType?: PriceType;
+  /** How the price was sourced: an official statement, a third-party estimate, or not known. */
+  priceConfidence?: PriceConfidence;
+  /** Short free-text note about the price (e.g. separate gate fee, "mulai dari"). */
+  priceNote?: string;
+  /** Where the details came from (article or official page). */
+  sourceUrl?: string;
+  /** Human-readable name of the source. */
+  sourceName?: string;
+  /** ISO date (YYYY-MM-DD) when the sources were last checked. */
+  lastCheckedAt?: string;
+  /** True when some details (status, price, address) still need checking on site or on Maps. */
+  needsVerification?: boolean;
 }
+
+export type PriceType = 'free' | 'ticket' | 'purchase_required';
+export type PriceConfidence = 'verified' | 'estimated' | 'unknown';
 
 /** Where a venue record comes from. */
 export type VenueSource = 'curated' | 'local' | 'sample';

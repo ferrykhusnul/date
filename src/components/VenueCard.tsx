@@ -21,6 +21,7 @@ export function VenueCard({ venue }: { venue: Venue }) {
           <span className="badge-row">
             {venue.isSample && <SampleBadge label="Contoh" />}
             {venue.status === 'inactive' && <span className="status-badge">Nonaktif</span>}
+            {venue.needsVerification && <span className="status-badge">Perlu dicek</span>}
             {!venue.isSample && venue.verifiedAt && <span className="verified-badge">Terverifikasi</span>}
           </span>
         </div>

@@ -113,12 +113,12 @@ export function CreateDate() {
     if (values.city.trim() && !list.some((c) => c.toLowerCase() === values.city.trim().toLowerCase())) list.push(values.city.trim());
     return list.map((c) => {
       const n = plannableVenues(realVenues, c).length;
-      return { value: c, label: c, icon: 'building' as const, hint: n ? `${n} tempat` : 'Pakai contoh dulu' };
+      return { value: c, label: c, icon: 'building' as const, hint: n ? `${n} tempat` : 'Belum ada tempat' };
     });
   }, [realVenues, values.city]);
 
   const cityPool = plannableVenues(realVenues, values.city);
-  const noVenues = values.city.trim() !== '' && cityPool.length === 0 && !settings.useSampleVenues;
+  const noVenues = values.city.trim() !== '' && cityPool.length === 0;
   const group = transportGroupOf(values.transportation);
 
   const validateStep = (i: number): boolean => {
@@ -194,9 +194,7 @@ export function CreateDate() {
           {err('city')}
           {values.city.trim() && cityPool.length === 0 && (
             <p className="soft-note">
-              {settings.useSampleVenues
-                ? <>Belum ada tempat di {values.city}, jadi pakai tempat contoh dulu ya. <Link to="/venue/baru" className="text-link">Tambah tempat</Link></>
-                : <>Belum ada tempat di {values.city}. <Link to="/venue/baru" className="text-link">Tambah tempat</Link> atau nyalakan tempat contoh di Setelan.</>}
+              Belum ada tempat di {values.city}. Coba Jakarta dulu, atau <Link to="/venue/baru" className="text-link">tambah tempat</Link> sendiri.
             </p>
           )}
         </>

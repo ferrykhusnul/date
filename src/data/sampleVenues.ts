@@ -1,8 +1,9 @@
 import type { Venue } from '../types';
 
 /**
- * SAMPLE DATA — placeholder venues so the planner can be tried before any real
- * venues exist. These are NOT real places: names, addresses and prices are
+ * LEGACY SAMPLE DATA — kept ONLY so plans saved by earlier versions (which were
+ * generated from these placeholders) still open. They are no longer listed,
+ * offered in settings, or used to generate new plans. These are NOT real places: names, addresses and prices are
  * illustrative only. They carry `isSample: true`, have no Google Maps listing
  * and are never mixed into the curated dataset. Their transit stops are
  * fictional too and are never marked verified.
