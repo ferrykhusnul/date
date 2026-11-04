@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useOnlineStatus } from '../pwa/useOnlineStatus';
 
 /**
  * Opens an external URL in a new tab without giving the new page access to
@@ -15,14 +16,17 @@ export function ExternalLink({
   className?: string;
   label?: string;
 }) {
+  const online = useOnlineStatus();
+  const suffix = online ? '(membuka tab baru)' : '(membuka tab baru, butuh internet — sedang offline)';
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer external"
       referrerPolicy="no-referrer"
-      className={className}
-      aria-label={label ? `${label} (membuka tab baru)` : undefined}
+      className={`${className ?? ''}${online ? '' : ' is-offline'}`.trim() || undefined}
+      aria-label={label ? `${label} ${suffix}` : undefined}
+      title={online ? undefined : 'Butuh koneksi internet'}
     >
       {children}
     </a>

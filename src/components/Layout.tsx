@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Icon, type IconName } from './Icon';
+import { OfflineBanner } from './OfflineBanner';
+import { PwaStatus } from './PwaStatus';
 import { StorageBanner } from './StorageBanner';
 
 const NAV_ITEMS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
@@ -37,9 +39,12 @@ export function Layout() {
       </aside>
 
       <main className="main" id="konten">
+        <OfflineBanner />
         <StorageBanner />
         <Outlet />
       </main>
+
+      <PwaStatus />
 
       <nav className="bottom-nav" aria-label="Navigasi utama">
         {NAV_ITEMS.map((item) => (

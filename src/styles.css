@@ -2239,6 +2239,65 @@ code {
   border-left-color: var(--ok);
 }
 
+/* PWA ----------------------------------------------------------------- */
+
+.offline-banner {
+  margin-bottom: var(--s4);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--ink);
+  background: var(--paper-sunk);
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+.pwa-toast {
+  position: fixed;
+  z-index: 30;
+  left: var(--s4);
+  right: var(--s4);
+  bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + var(--s3));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s3);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: var(--shadow);
+  font-size: var(--text-sm);
+}
+
+.pwa-toast .button-ghost {
+  color: var(--paper);
+  border-color: color-mix(in srgb, var(--paper) 40%, transparent);
+}
+
+.pwa-toast .button-primary {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.pwa-toast-actions {
+  display: inline-flex;
+  gap: var(--s2);
+}
+
+@media (min-width: 900px) {
+  .pwa-toast {
+    left: auto;
+    right: var(--s6);
+    bottom: var(--s6);
+    max-width: 420px;
+  }
+}
+
+a.is-offline {
+  opacity: 0.6;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

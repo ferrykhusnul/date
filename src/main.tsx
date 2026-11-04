@@ -5,6 +5,8 @@ import { App } from './App';
 import { AppStateProvider } from './state/AppState';
 import { VenueStoreProvider } from './state/VenueStore';
 import { bootstrapStorage } from './storage/bootstrap';
+// Imported early so the Android install prompt is captured before React mounts.
+import './pwa/install';
 import './styles.css';
 
 bootstrapStorage();

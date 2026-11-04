@@ -2,7 +2,34 @@
 
 Mobile-first date planning app (React + TypeScript + Vite).
 
-## Status: Phase 5 — local storage, saved plans & backup
+## Status: Phase 6 — PWA & offline
+
+Date Planner is an installable Progressive Web App (Android/Chrome
+"Instal aplikasi"), built with `vite-plugin-pwa` (Workbox `generateSW`).
+
+- **Manifest** (`vite.config.ts`): name/short name "Date Planner",
+  `display: standalone`, theme and background `#f6f1ea`, `lang: id`,
+  192/512 icons plus a 512 maskable icon. Icons are rendered from SVG by
+  `scripts/generate-icons.mjs` (Playwright) and committed in `public/`.
+- **Service worker:** precaches the app shell only (HTML, JS, CSS, icons,
+  manifest — 11 files) and serves `index.html` for client-side routes, so
+  deep links such as `/rencana/:id` open offline. There are **no runtime
+  caching rules**: Google Maps and any third-party content (e.g. venue
+  images) are never cached.
+- **Offline:** plans, venues, settings and backups live in localStorage,
+  and the generator and budget run entirely in the browser, so they keep
+  working offline. An offline banner appears and Google Maps links are
+  marked as needing internet.
+- **Updates:** registered with `registerType: 'prompt'`; a new version is
+  applied only when the user taps "Muat ulang". A "ready offline" notice
+  shows on first install.
+- **Install button:** Settings → "Aplikasi & offline" uses the browser's
+  install prompt when offered, otherwise shows manual instructions.
+
+The service worker is only active in production builds
+(`npm run build && npm run preview`), not in `npm run dev`.
+
+## Phase 5 — local storage, saved plans & backup
 
 The app works fully offline-first with no backend, account or external
 transmission. All data lives in this browser's `localStorage`.
@@ -144,5 +171,7 @@ npm install
 npm run dev        # development server
 npm run typecheck  # tsc --noEmit
 npm test           # unit tests (engine, storage/backup/migrations, Maps URLs, filters)
-npm run build      # typecheck + production build
+npm run build      # typecheck + production build (includes the service worker)
+npm run preview    # serve the build locally to try offline/installation
+node scripts/generate-icons.mjs  # re-render app icons (needs Playwright)
 ```

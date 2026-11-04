@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ChipGroup, MultiChipGroup } from '../components/ChipGroup';
 import { CurrencyInput } from '../components/CurrencyInput';
+import { AppInstallCard } from '../components/AppInstallCard';
 import { Icon } from '../components/Icon';
 import { PageHeader } from '../components/PageHeader';
 import { PrivacyNote } from '../components/PrivacyNote';
@@ -179,6 +180,8 @@ export function Settings() {
           <p className="status" role="status" aria-live="polite">{prefStatus}</p>
         </section>
       </form>
+
+      <AppInstallCard />
 
       <section className="section storage-card" id="data">
         <h2 className="section-title"><Icon name="shield" size={20} /> Data &amp; privasi</h2>
