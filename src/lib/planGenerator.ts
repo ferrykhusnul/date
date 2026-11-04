@@ -1,25 +1,13 @@
-import { SAMPLE_VENUES } from '../data/sampleVenues';
-import type { Activity, DateInput, DatePlan, PlanStop, Transportation, Venue, VenueCategory } from '../types';
+import type { Activity, DateInput, DatePlan, PlanStop, Transportation, Venue } from '../types';
 import { ACTIVITY_OPTIONS, VIBE_OPTIONS, labelOf } from './options';
 import { minutesToTime, timeToMinutes } from './format';
 
 /**
- * Phase 1 placeholder generator. Builds a plan from SAMPLE venues only so the
- * UI can be exercised end to end. Real venue search replaces this later.
+ * Rule-based plan builder. Picks venues from the pool it is given using their
+ * activity, vibe, environment and price metadata. All costs are ESTIMATES.
  */
 
-const ACTIVITY_CATEGORY: Record<Activity, VenueCategory> = {
-  makan: 'restoran',
-  kopi: 'kafe',
-  jalan: 'taman',
-  galeri: 'galeri',
-  nonton: 'bioskop',
-  belanja: 'pusat-belanja',
-  alam: 'alam',
-  hiburan: 'hiburan',
-};
-
-/** Rough per-leg transport estimate (IDR) used for sample plans. */
+/** Rough per-leg transport estimate (IDR, for two). */
 const TRANSPORT_COST_PER_LEG: Record<Transportation, number> = {
   'jalan-kaki': 0,
   motor: 10_000,
@@ -40,20 +28,30 @@ function uid(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-function stopCount(hours: number): number {
+function targetStops(hours: number): number {
   if (hours <= 2) return 2;
   if (hours <= 4) return 3;
   return 4;
 }
 
-function pickVenue(activity: Activity, input: DateInput, used: Set<string>): Venue {
-  const category = ACTIVITY_CATEGORY[activity];
-  const inCategory = SAMPLE_VENUES.filter((v) => v.category === category);
-  const matchesEnv = inCategory.filter(
-    (v) => input.environment === 'campuran' || v.environment === input.environment,
-  );
-  const pool = [...matchesEnv, ...inCategory];
-  return pool.find((v) => !used.has(v.id)) ?? pool[0] ?? SAMPLE_VENUES[0];
+const midPrice = (v: Venue) => (v.priceMin + v.priceMax) / 2;
+
+function score(v: Venue, input: DateInput, perStopBudget: number): number {
+  let s = 0;
+  if (v.vibes.includes(input.vibe)) s += 3;
+  if (input.environment === 'mixed' || v.environment === input.environment || v.environment === 'mixed') s += 2;
+  if (midPrice(v) * 2 <= perStopBudget) s += 2;
+  else if (v.priceMin * 2 <= perStopBudget) s += 1;
+  if (input.transportation === 'umum' && v.transitAccess) s += 1;
+  return s;
+}
+
+function pick(pool: Venue[], used: Set<string>, input: DateInput, perStopBudget: number, activity?: Activity) {
+  const candidates = pool.filter((v) => !used.has(v.id) && (!activity || v.activities.includes(activity)));
+  if (!candidates.length) return undefined;
+  return candidates
+    .map((v) => ({ v, s: score(v, input, perStopBudget) }))
+    .sort((a, b) => b.s - a.s || midPrice(a.v) - midPrice(b.v) || a.v.name.localeCompare(b.v.name))[0].v;
 }
 
 function partOfDay(startTime: string): string {
@@ -64,48 +62,73 @@ function partOfDay(startTime: string): string {
   return 'Malam';
 }
 
-export function generateSamplePlan(input: DateInput, existingId?: string): DatePlan {
-  const count = stopCount(input.durationHours);
+/**
+ * Builds a plan from `pool` (already limited to active venues the planner
+ * may use). Returns null when the pool has no venue at all.
+ */
+export function generatePlan(
+  input: DateInput,
+  pool: Venue[],
+  opts: { usesSampleVenues: boolean; existingId?: string },
+): DatePlan | null {
+  if (!pool.length) return null;
+
+  const count = Math.min(targetStops(input.durationHours), pool.length);
   const activities: Activity[] = input.activities.length ? input.activities : ['kopi'];
   const transit = TRANSIT_MINUTES[input.transportation];
-  const totalMinutes = input.durationHours * 60;
-  const perStop = Math.max(30, Math.floor((totalMinutes - transit * (count - 1)) / count / 15) * 15);
+  const transportCost = TRANSPORT_COST_PER_LEG[input.transportation] * (count - 1) * 2;
+  const perStopBudget = Math.max(0, input.budget - transportCost) / count;
 
   const used = new Set<string>();
-  let cursor = timeToMinutes(input.startTime);
-  const stops: PlanStop[] = [];
-
+  const chosen: { venue: Venue; activity: Activity }[] = [];
   for (let i = 0; i < count; i++) {
-    const activity = activities[i % activities.length];
-    const venue = pickVenue(activity, input, used);
+    const wanted = activities[i % activities.length];
+    const byActivity = pick(pool, used, input, perStopBudget, wanted);
+    const venue = byActivity ?? pick(pool, used, input, perStopBudget);
+    if (!venue) break;
     used.add(venue.id);
-    const perPerson = Math.round((venue.priceMin + venue.priceMax) / 2 / 1000) * 1000;
-    stops.push({
+    const activity = byActivity
+      ? wanted
+      : ((activities.find((a) => venue.activities.includes(a)) ?? venue.activities[0] ?? wanted) as Activity);
+    chosen.push({ venue, activity });
+  }
+
+  // Fit each venue's typical visit length into the requested duration.
+  const available = input.durationHours * 60 - transit * (chosen.length - 1);
+  const natural = chosen.reduce((sum, c) => sum + c.venue.visitDurationMinutes, 0) || 1;
+  const factor = Math.min(1.5, available / natural);
+
+  let cursor = timeToMinutes(input.startTime);
+  const stops: PlanStop[] = chosen.map(({ venue, activity }) => {
+    const minutes = Math.max(30, Math.round((venue.visitDurationMinutes * factor) / 15) * 15);
+    const stop: PlanStop = {
       id: uid('stop'),
       venueId: venue.id,
+      venueName: venue.name,
       activity,
       startTime: minutesToTime(cursor),
-      durationMinutes: perStop,
-      estimatedCost: perPerson * 2,
-    });
-    cursor += perStop + transit;
-  }
+      durationMinutes: minutes,
+      estimatedCost: Math.round(midPrice(venue) / 1000) * 1000 * 2,
+    };
+    cursor += minutes + transit;
+    return stop;
+  });
 
   const vibeLabel = labelOf(VIBE_OPTIONS, input.vibe);
   const city = input.city.trim() || 'Kota Anda';
-  const activityLabels = activities
-    .slice(0, 3)
-    .map((a) => labelOf(ACTIVITY_OPTIONS, a).toLowerCase());
+  const activityLabels = [...new Set(stops.map((s) => labelOf(ACTIVITY_OPTIONS, s.activity).toLowerCase()))];
 
   return {
-    id: existingId ?? uid('plan'),
+    id: opts.existingId ?? uid('plan'),
     title: `${partOfDay(input.startTime)} ${vibeLabel} di ${city}`,
-    concept: `Kencan bernuansa ${vibeLabel.toLowerCase()} selama ${input.durationHours} jam, dengan rangkaian ${activityLabels.join(', ')}. Rencana ini disusun dari data sampel untuk pratinjau tampilan.`,
+    concept:
+      `Kencan bernuansa ${vibeLabel.toLowerCase()} selama ${input.durationHours} jam, dengan rangkaian ${activityLabels.join(', ')}.` +
+      (opts.usesSampleVenues ? ' Disusun dari venue sampel — bukan tempat nyata.' : ''),
     input,
     stops,
-    transportCost: TRANSPORT_COST_PER_LEG[input.transportation] * (count - 1) * 2,
+    transportCost,
     createdAt: new Date().toISOString(),
-    isSample: true,
+    usesSampleVenues: opts.usesSampleVenues,
   };
 }
 

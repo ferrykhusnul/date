@@ -3,11 +3,11 @@ import { EmptyState } from '../components/EmptyState';
 import { Icon } from '../components/Icon';
 import { PageHeader } from '../components/PageHeader';
 import { SampleBadge, SampleNotice } from '../components/SampleBadge';
-import { getVenue } from '../data/sampleVenues';
+import { MapsLinks } from '../components/MapsLinks';
 import { formatDateLong, formatDuration, formatIDR } from '../lib/format';
 import {
   ACTIVITY_OPTIONS,
-  CATEGORY_LABELS,
+  categoryLabel,
   ENVIRONMENT_OPTIONS,
   TRANSPORT_OPTIONS,
   VIBE_OPTIONS,
@@ -15,6 +15,7 @@ import {
 } from '../lib/options';
 import { planEndTime, planTotal } from '../lib/planGenerator';
 import { useAppState } from '../state/AppState';
+import { useVenues } from '../state/VenueStore';
 import type { DatePlan } from '../types';
 
 /** Shows the current draft (/hasil) or a saved plan (/rencana/:id). */
@@ -22,6 +23,7 @@ export function DateResult() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { draft, setDraft, setFormSeed, savePlan, getSavedPlan, deletePlan } = useAppState();
+  const { getVenue } = useVenues();
 
   const plan: DatePlan | null | undefined = id ? getSavedPlan(id) : draft;
   const isDraft = !id;
@@ -88,10 +90,14 @@ export function DateResult() {
         <span className="tag">{labelOf(ENVIRONMENT_OPTIONS, plan.input.environment)}</span>
       </div>
 
-      <SampleNotice>
-        Tempat dan harga di rencana ini adalah data sampel untuk pratinjau tampilan — bukan
-        rekomendasi venue nyata.
-      </SampleNotice>
+      {plan.usesSampleVenues ? (
+        <SampleNotice>
+          Belum ada venue nyata di {plan.input.city}, jadi rencana ini memakai venue sampel — bukan
+          rekomendasi tempat nyata. Semua harga adalah perkiraan.
+        </SampleNotice>
+      ) : (
+        <p className="muted small">Semua harga adalah perkiraan berdasarkan dataset venue, bukan harga resmi.</p>
+      )}
 
       <div className="result-grid">
         <section className="section result-timeline">
@@ -108,26 +114,31 @@ export function DateResult() {
                   <div className="timeline-marker" aria-hidden="true">
                     <span>{i + 1}</span>
                   </div>
-                  <Link to={`/venue/${stop.venueId}`} className="venue-card">
-                    <div className="venue-card-top">
-                      <span className="venue-category">
-                        {[venue ? CATEGORY_LABELS[venue.category] : 'Venue', labelOf(ACTIVITY_OPTIONS, stop.activity)]
-                          .filter((v, idx, arr) => arr.indexOf(v) === idx)
-                          .join(' · ')}
-                      </span>
-                      <SampleBadge label="Sampel" />
-                    </div>
-                    <h3 className="venue-card-name">{venue?.name ?? 'Venue sampel'}</h3>
-                    <p className="venue-card-address">
-                      <Icon name="pin" size={14} /> {venue?.address}
-                    </p>
-                    <div className="venue-card-foot">
-                      <span>Perkiraan {formatIDR(stop.estimatedCost)}</span>
-                      <span className="text-link">
-                        Detail <Icon name="arrow-right" size={14} />
-                      </span>
-                    </div>
-                  </Link>
+                  <div className="venue-card">
+                    <Link to={`/venue/${encodeURIComponent(stop.venueId)}`} className="venue-card-main">
+                      <div className="venue-card-top">
+                        <span className="venue-category">
+                          {[venue ? categoryLabel(venue.category) : 'Venue', labelOf(ACTIVITY_OPTIONS, stop.activity)]
+                            .filter((v, idx, arr) => arr.indexOf(v) === idx)
+                            .join(' · ')}
+                        </span>
+                        {venue?.isSample && <SampleBadge label="Sampel" />}
+                        {venue && venue.status === 'inactive' && <span className="status-badge">Nonaktif</span>}
+                      </div>
+                      <h3 className="venue-card-name">{venue?.name ?? stop.venueName}</h3>
+                      <p className="venue-card-address">
+                        <Icon name="pin" size={14} />
+                        <span>{venue ? venue.address : 'Venue ini sudah tidak ada di dataset.'}</span>
+                      </p>
+                      <div className="venue-card-foot">
+                        <span>Perkiraan {formatIDR(stop.estimatedCost)} berdua</span>
+                        <span className="text-link">
+                          Detail <Icon name="arrow-right" size={14} />
+                        </span>
+                      </div>
+                    </Link>
+                    {venue && !venue.isSample && <MapsLinks venue={venue} compact />}
+                  </div>
                 </li>
               );
             })}
@@ -143,11 +154,11 @@ export function DateResult() {
         <aside className="section result-aside">
           <div className="budget-card">
             <h2 className="section-title">Perkiraan biaya</h2>
-            <p className="muted small">Untuk berdua · data sampel</p>
+            <p className="muted small">Untuk berdua · semua angka perkiraan</p>
             <ul className="cost-list">
               {plan.stops.map((s) => (
                 <li key={s.id}>
-                  <span>{getVenue(s.venueId)?.name ?? 'Venue sampel'}</span>
+                  <span>{getVenue(s.venueId)?.name ?? s.venueName}</span>
                   <span>{formatIDR(s.estimatedCost)}</span>
                 </li>
               ))}

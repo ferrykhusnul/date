@@ -1,9 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChipGroup, MultiChipGroup } from '../components/ChipGroup';
 import { CurrencyInput } from '../components/CurrencyInput';
 import { PageHeader } from '../components/PageHeader';
-import { SampleNotice } from '../components/SampleBadge';
 import { formatIDR, todayISO } from '../lib/format';
 import {
   ACTIVITY_OPTIONS,
@@ -14,8 +13,11 @@ import {
   TRANSPORT_OPTIONS,
   VIBE_OPTIONS,
 } from '../lib/options';
-import { generateSamplePlan } from '../lib/planGenerator';
+import { generatePlan } from '../lib/planGenerator';
+import { citiesOf, plannableVenues } from '../lib/venueFilters';
+import { SAMPLE_VENUES } from '../data/sampleVenues';
 import { useAppState } from '../state/AppState';
+import { useVenues } from '../state/VenueStore';
 import type { DateInput } from '../types';
 
 type Errors = Partial<Record<keyof DateInput, string>>;
@@ -36,6 +38,7 @@ function validate(v: DateInput): Errors {
 export function CreateDate() {
   const navigate = useNavigate();
   const { settings, formSeed, setFormSeed, draft, setDraft } = useAppState();
+  const { realVenues } = useVenues();
 
   const [values, setValues] = useState<DateInput>(
     () =>
@@ -48,7 +51,7 @@ export function CreateDate() {
         vibe: 'romantis',
         activities: ['makan', 'kopi'],
         transportation: settings.defaultTransportation,
-        environment: 'campuran',
+        environment: 'mixed',
         notes: '',
       },
   );
@@ -59,6 +62,11 @@ export function CreateDate() {
   useEffect(() => {
     setFormSeed(null);
   }, [setFormSeed]);
+
+  const cityPool = plannableVenues(realVenues, values.city);
+  const willUseSamples = values.city.trim() !== '' && cityPool.length === 0 && settings.useSampleVenues;
+  const noVenues = values.city.trim() !== '' && cityPool.length === 0 && !settings.useSampleVenues;
+  const citySuggestions = [...new Set([...citiesOf(realVenues.filter((v) => v.status === 'active')), ...CITY_SUGGESTIONS])];
 
   const set = <K extends keyof DateInput>(key: K, val: DateInput[K]) => {
     const next = { ...values, [key]: val };
@@ -76,10 +84,17 @@ export function CreateDate() {
       document.getElementById(`f-${first}`)?.focus();
       return;
     }
-    const plan = generateSamplePlan(
-      { ...values, city: values.city.trim(), notes: values.notes.trim() },
-      editing ? draft?.id : undefined,
-    );
+    const usesSampleVenues = cityPool.length === 0;
+    const pool = usesSampleVenues ? (settings.useSampleVenues ? SAMPLE_VENUES : []) : cityPool;
+    const plan = generatePlan({ ...values, city: values.city.trim(), notes: values.notes.trim() }, pool, {
+      usesSampleVenues,
+      existingId: editing ? draft?.id : undefined,
+    });
+    if (!plan) {
+      setErrors({ city: 'Belum ada venue aktif di kota ini.' });
+      document.getElementById('f-city')?.focus();
+      return;
+    }
     setDraft(plan);
     navigate('/hasil');
   };
@@ -92,10 +107,6 @@ export function CreateDate() {
         lead="Isi preferensi di bawah. Kami akan menyusun linimasa, tempat, dan perkiraan biaya."
         back={editing ? '/hasil' : undefined}
       />
-
-      <SampleNotice>
-        Pada fase ini rencana disusun dari venue sampel, bukan tempat nyata.
-      </SampleNotice>
 
       <form className="form" onSubmit={onSubmit} noValidate>
         <section className="form-section">
@@ -118,11 +129,26 @@ export function CreateDate() {
               onChange={(e) => set('city', e.target.value)}
             />
             <datalist id="city-suggestions">
-              {CITY_SUGGESTIONS.map((c) => (
+              {citySuggestions.map((c) => (
                 <option key={c} value={c} />
               ))}
             </datalist>
             {errors.city && <p className="field-error">{errors.city}</p>}
+            {cityPool.length > 0 && (
+              <p className="field-hint">{cityPool.length} venue aktif tersedia di {values.city.trim()}.</p>
+            )}
+            {willUseSamples && (
+              <p className="field-hint field-hint-warn">
+                Belum ada venue di {values.city.trim()}. Rencana akan memakai <strong>venue sampel</strong> (bukan tempat
+                nyata). <Link to="/venue/baru" className="text-link">Tambah venue</Link>
+              </p>
+            )}
+            {noVenues && (
+              <p className="field-hint field-hint-warn">
+                Belum ada venue aktif di {values.city.trim()}.{' '}
+                <Link to="/venue/baru" className="text-link">Tambah venue</Link> atau aktifkan venue sampel di Pengaturan.
+              </p>
+            )}
           </div>
 
           <div className="field-row">
@@ -259,7 +285,7 @@ export function CreateDate() {
         </section>
 
         <div className="form-actions sticky-actions">
-          <button type="submit" className="button button-primary button-lg button-block">
+          <button type="submit" className="button button-primary button-lg button-block" disabled={noVenues}>
             {editing ? 'Perbarui rencana' : 'Susun rencana'}
           </button>
         </div>

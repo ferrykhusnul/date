@@ -3,17 +3,21 @@ import { CurrencyInput } from '../components/CurrencyInput';
 import { PageHeader } from '../components/PageHeader';
 import { CITY_SUGGESTIONS, TRANSPORT_OPTIONS } from '../lib/options';
 import { DEFAULT_SETTINGS, useAppState } from '../state/AppState';
+import { useVenues } from '../state/VenueStore';
+import { CURATED_VENUES } from '../data/venues';
 import type { Settings as SettingsType, Transportation } from '../types';
 
 export function Settings() {
   const { settings, updateSettings, savedPlans, clearSavedPlans } = useAppState();
+  const { localVenues, realVenues, persistenceAvailable, clearLocal } = useVenues();
   const [values, setValues] = useState<SettingsType>(settings);
   const [status, setStatus] = useState<string>('');
 
   const dirty =
     values.defaultCity !== settings.defaultCity ||
     values.defaultBudget !== settings.defaultBudget ||
-    values.defaultTransportation !== settings.defaultTransportation;
+    values.defaultTransportation !== settings.defaultTransportation ||
+    values.useSampleVenues !== settings.useSampleVenues;
   const valid = values.defaultCity.trim().length > 0 && values.defaultBudget >= 50_000;
 
   const onSubmit = (e: FormEvent) => {
@@ -32,6 +36,26 @@ export function Settings() {
     if (window.confirm('Hapus semua rencana tersimpan?')) {
       clearSavedPlans();
       setStatus('Semua rencana dihapus.');
+    }
+  };
+
+  const onExport = () => {
+    const json = JSON.stringify(realVenues, null, 2);
+    const url = URL.createObjectURL(new Blob([json + '\n'], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `venues-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setStatus(`${realVenues.length} venue diekspor.`);
+  };
+
+  const onClearVenues = () => {
+    if (window.confirm(`Hapus ${localVenues.length} venue lokal dari perangkat ini? Tindakan ini tidak dapat dibatalkan.`)) {
+      clearLocal();
+      setStatus('Venue lokal dihapus.');
     }
   };
 
@@ -106,6 +130,21 @@ export function Settings() {
             </select>
           </div>
 
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={values.useSampleVenues}
+              onChange={(e) => {
+                setValues({ ...values, useSampleVenues: e.target.checked });
+                setStatus('');
+              }}
+            />
+            <span>
+              Pakai venue sampel bila belum ada venue di kota tujuan
+              <span className="field-hint block">Rencana dari venue sampel selalu diberi label "Venue sampel".</span>
+            </span>
+          </label>
+
           <div className="form-actions inline">
             <button type="submit" className="button button-primary" disabled={!dirty || !valid}>
               Simpan pengaturan
@@ -124,30 +163,47 @@ export function Settings() {
         <h2 className="section-title">Penyimpanan</h2>
         <dl className="detail-list compact">
           <div>
-            <dt>Lokasi data</dt>
-            <dd>Memori peramban (sesi ini saja)</dd>
+            <dt>Rencana &amp; pengaturan</dt>
+            <dd>Memori (hilang saat dimuat ulang)</dd>
           </div>
           <div>
             <dt>Rencana tersimpan</dt>
             <dd>{savedPlans.length} rencana</dd>
           </div>
           <div>
-            <dt>Sumber venue</dt>
-            <dd>Data sampel (bukan tempat nyata)</dd>
+            <dt>Venue terkurasi (bawaan)</dt>
+            <dd>{CURATED_VENUES.length} venue</dd>
+          </div>
+          <div>
+            <dt>Venue lokal</dt>
+            <dd>
+              {localVenues.length} venue · {persistenceAvailable ? 'localStorage peramban' : 'tidak dapat disimpan'}
+            </dd>
           </div>
         </dl>
         <p className="field-hint">
-          Pada Fase 1, data belum disimpan permanen. Memuat ulang halaman akan menghapus pengaturan
-          dan rencana tersimpan.
+          Venue yang kamu tambah atau ubah tersimpan di peramban ini saja. Ekspor ke JSON untuk
+          memindahkannya ke dataset terkurasi (<code>src/data/venues.ts</code>).
         </p>
-        <button
-          type="button"
-          className="button button-danger-ghost"
-          onClick={onClear}
-          disabled={savedPlans.length === 0}
-        >
-          Hapus semua rencana
-        </button>
+        {!persistenceAvailable && (
+          <p className="field-error">Penyimpanan peramban tidak tersedia; perubahan venue hanya bertahan sampai halaman dimuat ulang.</p>
+        )}
+        <div className="form-actions inline">
+          <button type="button" className="button button-ghost" onClick={onExport} disabled={realVenues.length === 0}>
+            Ekspor JSON
+          </button>
+          <button type="button" className="button button-danger-ghost" onClick={onClearVenues} disabled={localVenues.length === 0}>
+            Hapus venue lokal
+          </button>
+          <button
+            type="button"
+            className="button button-danger-ghost"
+            onClick={onClear}
+            disabled={savedPlans.length === 0}
+          >
+            Hapus semua rencana
+          </button>
+        </div>
       </section>
     </div>
   );

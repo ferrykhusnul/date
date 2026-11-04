@@ -10,7 +10,10 @@ export type IconName =
   | 'pin'
   | 'trash'
   | 'edit'
-  | 'check';
+  | 'check'
+  | 'navigation'
+  | 'external'
+  | 'store';
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
@@ -26,6 +29,9 @@ const PATHS: Record<IconName, string> = {
   trash: 'M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3',
   edit: 'M4 20h4L19 9l-4-4L4 16zM14 6l4 4',
   check: 'M5 12.5 10 17 19 7',
+  navigation: 'M3 11 21 3l-8 18-2-8z',
+  external: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+  store: 'M4 9l1.5-5h13L20 9M4 9h16M4 9v11h16V9M9 20v-6h6v6',
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

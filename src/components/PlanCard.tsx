@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-import { getVenue } from '../data/sampleVenues';
 import { formatDateShort, formatIDR } from '../lib/format';
 import { planEndTime, planTotal } from '../lib/planGenerator';
 import type { DatePlan } from '../types';
+import { useVenues } from '../state/VenueStore';
 import { Icon } from './Icon';
 import { SampleBadge } from './SampleBadge';
 
@@ -15,6 +15,7 @@ export function PlanCard({
   variant?: 'compact' | 'preview';
   onDelete?: (id: string) => void;
 }) {
+  const { getVenue } = useVenues();
   const total = planTotal(plan);
   const over = total > plan.input.budget;
   return (
@@ -26,7 +27,7 @@ export function PlanCard({
           <span>
             {plan.input.startTime}–{planEndTime(plan)}
           </span>
-          <SampleBadge label="Sampel" />
+          {plan.usesSampleVenues && <SampleBadge label="Venue sampel" />}
         </div>
         <h3 className="plan-card-title">{plan.title}</h3>
         {variant === 'preview' && (
@@ -34,7 +35,7 @@ export function PlanCard({
             {plan.stops.map((s) => (
               <li key={s.id}>
                 <span className="stop-time">{s.startTime}</span>
-                <span>{getVenue(s.venueId)?.name ?? 'Venue sampel'}</span>
+                <span>{getVenue(s.venueId)?.name ?? s.venueName}</span>
               </li>
             ))}
           </ol>
@@ -43,7 +44,7 @@ export function PlanCard({
           <span>
             {plan.stops.length} tempat · {plan.input.city}
           </span>
-          <span className={over ? 'text-warn' : undefined}>{formatIDR(total)}</span>
+          <span className={over ? 'text-warn' : undefined}>± {formatIDR(total)}</span>
         </div>
       </Link>
       {onDelete && (

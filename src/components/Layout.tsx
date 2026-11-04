@@ -4,8 +4,9 @@ import { Icon, type IconName } from './Icon';
 
 const NAV_ITEMS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/', label: 'Beranda', icon: 'home', end: true },
-  { to: '/buat', label: 'Buat Kencan', icon: 'plus' },
+  { to: '/buat', label: 'Buat', icon: 'plus' },
   { to: '/tersimpan', label: 'Tersimpan', icon: 'bookmark' },
+  { to: '/venue', label: 'Venue', icon: 'store' },
   { to: '/pengaturan', label: 'Pengaturan', icon: 'settings' },
 ];
 
@@ -31,7 +32,7 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
-        <p className="sidebar-note">Fase 1 · Semua venue adalah data sampel.</p>
+        <p className="sidebar-note">Harga venue selalu berupa perkiraan. Venue sampel ditandai jelas.</p>
       </aside>
 
       <main className="main" id="konten">

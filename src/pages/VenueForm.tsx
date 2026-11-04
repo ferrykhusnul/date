@@ -1,0 +1,313 @@
+import { useState, type FormEvent } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { MultiChipGroup } from '../components/ChipGroup';
+import { CurrencyInput } from '../components/CurrencyInput';
+import { EmptyState } from '../components/EmptyState';
+import { ExternalLink } from '../components/ExternalLink';
+import { Icon } from '../components/Icon';
+import { PageHeader } from '../components/PageHeader';
+import { todayISO } from '../lib/format';
+import { buildSearchUrl } from '../lib/maps';
+import {
+  ACTIVITY_OPTIONS,
+  CATEGORY_OPTIONS,
+  CITY_SUGGESTIONS,
+  ENVIRONMENT_OPTIONS,
+  STATUS_OPTIONS,
+  VIBE_OPTIONS,
+} from '../lib/options';
+import { citiesOf } from '../lib/venueFilters';
+import { validateVenue, type VenueErrors } from '../lib/venueValidation';
+import { newVenueId, useVenues } from '../state/VenueStore';
+import type { Activity, Environment, Venue, VenueStatus, Vibe } from '../types';
+
+/** Form state keeps optional numbers as text so fields can be left blank. */
+interface FormValues extends Omit<Venue, 'latitude' | 'longitude'> {
+  latitude: string;
+  longitude: string;
+}
+
+const BLANK: FormValues = {
+  id: '',
+  name: '',
+  category: '',
+  address: '',
+  city: '',
+  district: '',
+  priceMin: 0,
+  priceMax: 0,
+  visitDurationMinutes: 60,
+  vibes: [],
+  activities: [],
+  environment: 'indoor',
+  latitude: '',
+  longitude: '',
+  googleMapsUrl: '',
+  description: '',
+  verifiedAt: '',
+  status: 'active',
+  transitAccess: '',
+};
+
+function toForm(v: Venue): FormValues {
+  return {
+    ...BLANK,
+    ...v,
+    district: v.district ?? '',
+    verifiedAt: v.verifiedAt ?? '',
+    transitAccess: v.transitAccess ?? '',
+    latitude: v.latitude === undefined ? '' : String(v.latitude),
+    longitude: v.longitude === undefined ? '' : String(v.longitude),
+  };
+}
+
+function parseCoord(text: string): number | undefined {
+  const t = text.trim().replace(',', '.');
+  return t === '' ? undefined : Number(t);
+}
+
+function toVenue(f: FormValues, id: string): Venue {
+  const opt = (s: string | undefined) => (s && s.trim() ? s.trim() : undefined);
+  return {
+    id,
+    name: f.name.trim(),
+    category: f.category,
+    address: f.address.trim(),
+    city: f.city.trim(),
+    district: opt(f.district),
+    priceMin: f.priceMin,
+    priceMax: f.priceMax,
+    visitDurationMinutes: f.visitDurationMinutes,
+    vibes: f.vibes,
+    activities: f.activities,
+    environment: f.environment,
+    latitude: parseCoord(f.latitude),
+    longitude: parseCoord(f.longitude),
+    googleMapsUrl: f.googleMapsUrl.trim(),
+    description: f.description.trim(),
+    verifiedAt: opt(f.verifiedAt),
+    status: f.status,
+    transitAccess: opt(f.transitAccess),
+  };
+}
+
+export function VenueForm() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { getVenue, saveVenue, realVenues } = useVenues();
+  const existing = id ? getVenue(id) : undefined;
+
+  const [values, setValues] = useState<FormValues>(() => (existing ? toForm(existing) : BLANK));
+  const [errors, setErrors] = useState<VenueErrors>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  if (id && (!existing || existing.isSample)) {
+    return (
+      <div className="page page-narrow">
+        <PageHeader title={existing ? 'Venue sampel tidak dapat diubah' : 'Venue tidak ditemukan'} back />
+        <EmptyState
+          title={existing ? 'Ini venue sampel' : 'Venue tidak tersedia'}
+          body={existing ? 'Venue sampel hanya contoh dan bersifat baca-saja. Tambahkan venue nyata sebagai gantinya.' : 'Tautan mungkin salah atau venue sudah dihapus.'}
+          actions={<Link to="/venue/baru" className="button button-primary">Tambah venue</Link>}
+        />
+      </div>
+    );
+  }
+
+  const set = <K extends keyof FormValues>(key: K, val: FormValues[K]) => {
+    const next = { ...values, [key]: val };
+    setValues(next);
+    if (submitted) setErrors(validateVenue(toVenue(next, next.id || 'draft')));
+  };
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setSubmitted(true);
+    const venueId = existing?.id ?? newVenueId(values.name, values.city);
+    const venue = toVenue(values, venueId);
+    const errs = validateVenue(venue);
+    setErrors(errs);
+    const first = Object.keys(errs)[0];
+    if (first) {
+      document.getElementById(`v-${first}`)?.focus();
+      return;
+    }
+    saveVenue(venue);
+    navigate(`/venue/${encodeURIComponent(venueId)}`, { replace: true });
+  };
+
+  const err = (k: keyof Venue) =>
+    errors[k] ? <p className="field-error" id={`v-${k}-error`}>{errors[k]}</p> : null;
+  const inv = (k: keyof Venue) => (errors[k] ? true : undefined);
+  const canSearch = values.name.trim() && values.address.trim();
+  const cities = [...new Set([...citiesOf(realVenues), ...CITY_SUGGESTIONS])];
+
+  return (
+    <div className="page page-narrow">
+      <PageHeader
+        back
+        eyebrow={existing ? 'Ubah venue' : 'Venue baru'}
+        title={existing ? existing.name : 'Tambah venue'}
+        lead="Isi hanya informasi yang sudah kamu cek sendiri. Harga diisi sebagai perkiraan per orang."
+      />
+
+      <form className="form" onSubmit={onSubmit} noValidate>
+        <section className="form-section">
+          <h2 className="form-section-title"><span className="step">01</span> Identitas</h2>
+          <div className="field">
+            <label className="field-label" htmlFor="v-name">Nama venue</label>
+            <input id="v-name" className="input" value={values.name} aria-invalid={inv('name')}
+              onChange={(e) => set('name', e.target.value)} />
+            {err('name')}
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="v-category">Kategori</label>
+            <select id="v-category" className="input select" value={values.category} aria-invalid={inv('category')}
+              onChange={(e) => set('category', e.target.value)}>
+              <option value="" disabled>Pilih kategori</option>
+              {CATEGORY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            {err('category')}
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="v-description">Deskripsi <span className="optional">(opsional)</span></label>
+            <textarea id="v-description" className="input textarea" rows={3} maxLength={500}
+              value={values.description} onChange={(e) => set('description', e.target.value)} />
+          </div>
+        </section>
+
+        <section className="form-section">
+          <h2 className="form-section-title"><span className="step">02</span> Lokasi</h2>
+          <div className="field">
+            <label className="field-label" htmlFor="v-address">Alamat</label>
+            <input id="v-address" className="input" value={values.address} aria-invalid={inv('address')}
+              onChange={(e) => set('address', e.target.value)} />
+            {err('address')}
+          </div>
+          <div className="field-row">
+            <div className="field">
+              <label className="field-label" htmlFor="v-city">Kota</label>
+              <input id="v-city" className="input" list="venue-city-list" value={values.city} aria-invalid={inv('city')}
+                onChange={(e) => set('city', e.target.value)} />
+              <datalist id="venue-city-list">{cities.map((c) => <option key={c} value={c} />)}</datalist>
+              {err('city')}
+            </div>
+            <div className="field">
+              <label className="field-label" htmlFor="v-district">Kecamatan <span className="optional">(opsional)</span></label>
+              <input id="v-district" className="input" value={values.district}
+                onChange={(e) => set('district', e.target.value)} />
+            </div>
+          </div>
+          <div className="field-row">
+            <div className="field">
+              <label className="field-label" htmlFor="v-latitude">Lintang <span className="optional">(opsional)</span></label>
+              <input id="v-latitude" className="input" inputMode="decimal" placeholder="-6.2"
+                value={values.latitude} aria-invalid={inv('latitude')} onChange={(e) => set('latitude', e.target.value)} />
+              {err('latitude')}
+            </div>
+            <div className="field">
+              <label className="field-label" htmlFor="v-longitude">Bujur <span className="optional">(opsional)</span></label>
+              <input id="v-longitude" className="input" inputMode="decimal" placeholder="106.8"
+                value={values.longitude} aria-invalid={inv('longitude')} onChange={(e) => set('longitude', e.target.value)} />
+              {err('longitude')}
+            </div>
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="v-transitAccess">Akses transportasi umum <span className="optional">(opsional)</span></label>
+            <input id="v-transitAccess" className="input" placeholder="Misalnya: 5 menit jalan kaki dari stasiun terdekat"
+              value={values.transitAccess} onChange={(e) => set('transitAccess', e.target.value)} />
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="v-googleMapsUrl">Tautan listing Google Maps</label>
+            <input id="v-googleMapsUrl" className="input" type="url" inputMode="url" placeholder="https://maps.app.goo.gl/…"
+              value={values.googleMapsUrl} aria-invalid={inv('googleMapsUrl')}
+              onChange={(e) => set('googleMapsUrl', e.target.value)} />
+            <p className="field-hint">
+              Buka venue di Google Maps → Bagikan → Salin link.{' '}
+              {canSearch ? (
+                <ExternalLink className="text-link" href={buildSearchUrl({ ...values, district: values.district })}>
+                  Cari venue ini di Google Maps <Icon name="external" size={14} />
+                </ExternalLink>
+              ) : (
+                <span>Isi nama dan alamat untuk membuka pencarian.</span>
+              )}
+            </p>
+            {err('googleMapsUrl')}
+          </div>
+        </section>
+
+        <section className="form-section">
+          <h2 className="form-section-title"><span className="step">03</span> Perkiraan harga &amp; durasi</h2>
+          <div className="field-row">
+            <div className="field">
+              <label className="field-label" htmlFor="v-priceMin">Perkiraan min. /orang</label>
+              <CurrencyInput id="v-priceMin" value={values.priceMin} invalid={Boolean(errors.priceMin)}
+                onChange={(v) => set('priceMin', v)} />
+              {err('priceMin')}
+            </div>
+            <div className="field">
+              <label className="field-label" htmlFor="v-priceMax">Perkiraan maks. /orang</label>
+              <CurrencyInput id="v-priceMax" value={values.priceMax} invalid={Boolean(errors.priceMax)}
+                onChange={(v) => set('priceMax', v)} />
+              {err('priceMax')}
+            </div>
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="v-visitDurationMinutes">Lama kunjungan biasa (menit)</label>
+            <input id="v-visitDurationMinutes" className="input" type="number" inputMode="numeric" min={15} max={720} step={15}
+              value={values.visitDurationMinutes || ''} aria-invalid={inv('visitDurationMinutes')}
+              onChange={(e) => set('visitDurationMinutes', Number(e.target.value) || 0)} />
+            {err('visitDurationMinutes')}
+          </div>
+        </section>
+
+        <section className="form-section">
+          <h2 className="form-section-title"><span className="step">04</span> Metadata</h2>
+          <div id="v-activities" tabIndex={-1}>
+            <MultiChipGroup<Activity> name="v-act" legend="Aktivitas" options={ACTIVITY_OPTIONS}
+              value={values.activities as Activity[]} error={errors.activities}
+              onChange={(v) => set('activities', v)} />
+          </div>
+          <div id="v-vibes" tabIndex={-1}>
+            <MultiChipGroup<Vibe> name="v-vibe" legend="Vibe" options={VIBE_OPTIONS}
+              value={values.vibes as Vibe[]} error={errors.vibes} onChange={(v) => set('vibes', v)} />
+          </div>
+          <div className="field-row">
+            <div className="field">
+              <label className="field-label" htmlFor="v-environment">Lingkungan</label>
+              <select id="v-environment" className="input select" value={values.environment}
+                onChange={(e) => set('environment', e.target.value as Environment)}>
+                {ENVIRONMENT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label className="field-label" htmlFor="v-status">Status</label>
+              <select id="v-status" className="input select" value={values.status}
+                onChange={(e) => set('status', e.target.value as VenueStatus)}>
+                {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="field">
+            <label className="field-label" htmlFor="v-verifiedAt">Tanggal diverifikasi <span className="optional">(opsional)</span></label>
+            <div className="input-with-action">
+              <input id="v-verifiedAt" className="input" type="date" max={todayISO()} value={values.verifiedAt}
+                aria-invalid={inv('verifiedAt')} onChange={(e) => set('verifiedAt', e.target.value)} />
+              <button type="button" className="button button-ghost button-sm" onClick={() => set('verifiedAt', todayISO())}>
+                Hari ini
+              </button>
+            </div>
+            <p className="field-hint">Isi hanya jika kamu sudah mengecek detail venue ini di listing resminya.</p>
+            {err('verifiedAt')}
+          </div>
+        </section>
+
+        <div className="form-actions sticky-actions">
+          <button type="submit" className="button button-primary button-lg button-block">
+            {existing ? 'Simpan perubahan' : 'Simpan venue'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

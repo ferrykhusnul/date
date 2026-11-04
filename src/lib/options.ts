@@ -1,4 +1,4 @@
-import type { Activity, Environment, Transportation, VenueCategory, Vibe } from '../types';
+import type { Activity, Environment, Transportation, VenueStatus, Vibe } from '../types';
 
 export interface Option<T extends string | number> {
   value: T;
@@ -59,19 +59,34 @@ export const TRANSPORT_OPTIONS: Option<Transportation>[] = [
 export const ENVIRONMENT_OPTIONS: Option<Environment>[] = [
   { value: 'indoor', label: 'Dalam ruangan' },
   { value: 'outdoor', label: 'Luar ruangan' },
-  { value: 'campuran', label: 'Campuran' },
+  { value: 'mixed', label: 'Campuran' },
 ];
 
-export const CATEGORY_LABELS: Record<VenueCategory, string> = {
-  restoran: 'Restoran',
-  kafe: 'Kafe',
-  taman: 'Taman Kota',
-  galeri: 'Museum & Galeri',
-  bioskop: 'Bioskop',
-  'pusat-belanja': 'Pusat Belanja',
-  alam: 'Wisata Alam',
-  hiburan: 'Hiburan',
-};
+export const CATEGORY_OPTIONS: Option<string>[] = [
+  { value: 'restoran', label: 'Restoran' },
+  { value: 'kafe', label: 'Kafe' },
+  { value: 'bar', label: 'Bar & Lounge' },
+  { value: 'taman', label: 'Taman Kota' },
+  { value: 'museum', label: 'Museum' },
+  { value: 'galeri', label: 'Galeri Seni' },
+  { value: 'bioskop', label: 'Bioskop' },
+  { value: 'pusat-belanja', label: 'Pusat Belanja' },
+  { value: 'pasar', label: 'Pasar & Bazar' },
+  { value: 'wisata-alam', label: 'Wisata Alam' },
+  { value: 'hiburan', label: 'Hiburan' },
+  { value: 'toko-buku', label: 'Toko Buku' },
+  { value: 'lainnya', label: 'Lainnya' },
+];
+
+export const STATUS_OPTIONS: Option<VenueStatus>[] = [
+  { value: 'active', label: 'Aktif' },
+  { value: 'inactive', label: 'Nonaktif' },
+];
+
+export function categoryLabel(value: string): string {
+  return CATEGORY_OPTIONS.find((o) => o.value === value)?.label ?? value;
+}
+
 
 export function labelOf<T extends string | number>(options: Option<T>[], value: T): string {
   return options.find((o) => o.value === value)?.label ?? String(value);

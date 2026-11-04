@@ -3,14 +3,15 @@ import { buildSamplePlans } from '../data/samplePlans';
 import type { DateInput, DatePlan, Settings } from '../types';
 
 /**
- * Phase 1 state lives in memory only. Nothing is persisted: refreshing the
- * page resets settings, drafts and saved plans. Persistence comes later.
+ * Plans, drafts and settings live in memory only: refreshing the page resets
+ * them. (Venues are persisted separately — see VenueStore.)
  */
 
 export const DEFAULT_SETTINGS: Settings = {
   defaultCity: 'Jakarta',
   defaultBudget: 500_000,
   defaultTransportation: 'motor',
+  useSampleVenues: true,
 };
 
 interface AppState {
