@@ -27,7 +27,7 @@ import { validatePlan } from '../engine/validation';
 import { formatDateLong, formatDuration } from '../lib/format';
 import { ENVIRONMENT_OPTIONS, TRANSPORT_OPTIONS, VIBE_OPTIONS, labelOf } from '../lib/options';
 import { plannableVenues } from '../lib/venueFilters';
-import { useAppState } from '../state/AppState';
+import { planDisplayName, useAppState } from '../state/AppState';
 import { useVenues } from '../state/VenueStore';
 import type { DatePlan, ItineraryItem, LegMode, Venue } from '../types';
 
@@ -35,7 +35,10 @@ import type { DatePlan, ItineraryItem, LegMode, Venue } from '../types';
 export function DateResult() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { draft, setDraft, setFormSeed, savePlan, updateSavedPlan, getSavedPlan, deletePlan } = useAppState();
+  const { draft, setDraft, setFormSeed, savePlan, updateSavedPlan, getSavedPlan, deletePlan, renamePlan, duplicatePlan } =
+    useAppState();
+  const [renaming, setRenaming] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
   const { getVenue, realVenues } = useVenues();
   const [editing, setEditing] = useState(false);
 
@@ -134,8 +137,22 @@ export function DateResult() {
     navigate(`/rencana/${saved.id}`, { replace: true });
   };
 
+  const startRename = () => {
+    setNameDraft(plan.name ?? '');
+    setRenaming(true);
+  };
+  const submitRename = (e: React.FormEvent) => {
+    e.preventDefault();
+    renamePlan(plan.id, nameDraft);
+    setRenaming(false);
+  };
+  const onDuplicate = () => {
+    const copy = duplicatePlan(plan.id);
+    if (copy) navigate(`/rencana/${encodeURIComponent(copy.id)}`);
+  };
+
   const onDelete = () => {
-    if (window.confirm(`Hapus rencana "${plan.title}"?`)) {
+    if (window.confirm(`Hapus rencana "${planDisplayName(plan)}"? Tindakan ini tidak dapat dibatalkan.`)) {
       deletePlan(plan.id);
       navigate('/tersimpan', { replace: true });
     }
@@ -150,9 +167,26 @@ export function DateResult() {
       <PageHeader
         back={isDraft ? undefined : '/tersimpan'}
         eyebrow={`${formatDateLong(plan.input.date)} · ${plan.input.startTime}–${planEndTime(plan)}`}
-        title={plan.title}
+        title={planDisplayName(plan)}
         lead={plan.concept}
       />
+
+      {renaming ? (
+        <form className="rename-form" onSubmit={submitRename}>
+          <label className="field-label" htmlFor="plan-name">Nama rencana</label>
+          <div className="input-with-action">
+            <input id="plan-name" className="input" maxLength={80} autoFocus placeholder={plan.title}
+              value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} />
+            <button type="submit" className="button button-primary button-sm">Simpan</button>
+            <button type="button" className="button button-ghost button-sm" onClick={() => setRenaming(false)}>Batal</button>
+          </div>
+          <p className="field-hint">Kosongkan untuk memakai judul otomatis ("{plan.title}").</p>
+        </form>
+      ) : (
+        <button type="button" className="text-link rename-link" onClick={startRename}>
+          <Icon name="edit" size={14} /> {plan.name ? 'Ganti nama' : 'Beri nama rencana'}
+        </button>
+      )}
 
       <div className="tag-row">
         <span className="tag">{plan.input.city}</span>
@@ -274,8 +308,12 @@ export function DateResult() {
             ) : (
               <>
                 <p className="saved-note">
-                  <Icon name="check" size={16} /> Tersimpan · perubahan disimpan otomatis
+                  <Icon name="check" size={16} /> Tersimpan di perangkat ini · perubahan disimpan otomatis
                 </p>
+                <button type="button" className="button button-ghost button-block" onClick={onDuplicate}>
+                  <Icon name="copy" size={18} />
+                  Duplikat rencana
+                </button>
                 <button type="button" className="button button-danger-ghost button-block" onClick={onDelete}>
                   <Icon name="trash" size={18} />
                   Hapus rencana

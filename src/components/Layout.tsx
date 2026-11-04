@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Icon, type IconName } from './Icon';
+import { StorageBanner } from './StorageBanner';
 
 const NAV_ITEMS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/', label: 'Beranda', icon: 'home', end: true },
@@ -32,10 +33,11 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
-        <p className="sidebar-note">Harga venue selalu berupa perkiraan. Venue sampel ditandai jelas.</p>
+        <p className="sidebar-note">Data tersimpan di perangkat ini saja. Harga venue selalu berupa perkiraan.</p>
       </aside>
 
       <main className="main" id="konten">
+        <StorageBanner />
         <Outlet />
       </main>
 

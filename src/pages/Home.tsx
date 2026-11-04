@@ -3,12 +3,14 @@ import { EmptyState } from '../components/EmptyState';
 import { Icon } from '../components/Icon';
 import { PlanCard } from '../components/PlanCard';
 import { formatDateLong, greetingFor, todayISO } from '../lib/format';
-import { useAppState } from '../state/AppState';
+import { planDisplayName, useAppState } from '../state/AppState';
 
 export function Home() {
   const { savedPlans, draft, loadSamplePlans } = useAppState();
   const now = new Date();
-  const [featured, ...rest] = savedPlans;
+  // Most recently saved first.
+  const bySaved = [...savedPlans].sort((a, b) => (b.savedAt ?? b.createdAt).localeCompare(a.savedAt ?? a.createdAt));
+  const [featured, ...rest] = bySaved;
 
   return (
     <div className="page page-home">
@@ -29,7 +31,7 @@ export function Home() {
         </Link>
         {draft && (
           <Link to="/hasil" className="draft-link">
-            Lanjutkan draf: <strong>{draft.title}</strong>
+            Lanjutkan draf: <strong>{planDisplayName(draft)}</strong>
             <Icon name="arrow-right" size={16} />
           </Link>
         )}

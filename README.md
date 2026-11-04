@@ -2,7 +2,41 @@
 
 Mobile-first date planning app (React + TypeScript + Vite).
 
-## Status: Phase 4 — Jakarta public transport
+## Status: Phase 5 — local storage, saved plans & backup
+
+The app works fully offline-first with no backend, account or external
+transmission. All data lives in this browser's `localStorage`.
+
+**Storage layer (`src/storage/`)**
+
+| Module | Responsibility |
+| --- | --- |
+| `storage.ts` | Single access point to localStorage: versioned envelopes (`{ app, schemaVersion, updatedAt, data }`), safe JSON parsing, quota/blocked detection, quarantine of unreadable values |
+| `schema.ts` | Field-by-field validation of plans, venues, settings and preferences; invalid records are dropped and counted, never guessed |
+| `migrations.ts` | Step-by-step schema migrations (`MIGRATIONS[n]` upgrades n → n+1) and the one-off move of the Phase 2–4 venue key |
+| `persisted.ts` | Load/save helpers that report problems and copy unreadable data aside before writing over it |
+| `backup.ts` | Export file format, strict import validation, and pure merge/replace planning for the preview |
+| `snapshot.ts` | Automatic safety copy taken before every import/restore so it can be undone |
+| `issues.ts` | App-wide storage warnings shown in a banner |
+
+Persisted keys: `date-planner.plans`, `.draft`, `.settings`, `.preferences`,
+`.venues`, plus `.pre-import-snapshot`. Data from a newer schema version is
+never modified. Derived plan fields (timeline, legs, notes) are rebuilt on
+load. Other open tabs stay in sync via the `storage` event.
+
+**Saved plans:** save, edit inline (auto-saved), rename, duplicate, delete
+with confirmation, open, search, filter by city and date, sort, and show
+creation date.
+
+**Backup (`/cadangan`):** export everything to JSON. Import validates the
+file, shows a preview of exactly what will be added, replaced, kept or
+removed, offers merge (with a conflict policy) or replace, requires explicit
+acknowledgement for anything that changes existing data, and takes an
+automatic snapshot first ("Pulihkan data ini" undoes the import).
+Malformed, foreign, oversized or newer-version files are rejected without
+touching stored data.
+
+## Phase 4 — Jakarta public transport
 
 Transport options: TransJakarta, MRT Jakarta, LRT Jakarta, KRL Commuter Line,
 any public transport, motorcycle, car, walking, and mixed modes.
@@ -109,6 +143,6 @@ Plans, drafts and settings are still in memory only (reset on reload).
 npm install
 npm run dev        # development server
 npm run typecheck  # tsc --noEmit
-npm test           # unit tests (engine scoring/budget/generator/edits, Maps URLs, filters)
+npm test           # unit tests (engine, storage/backup/migrations, Maps URLs, filters)
 npm run build      # typecheck + production build
 ```

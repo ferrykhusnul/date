@@ -1,7 +1,9 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CURATED_VENUES } from '../data/venues';
 import { SAMPLE_VENUES } from '../data/sampleVenues';
-import { parseStoredVenue } from '../lib/venueValidation';
+import { loadCollection, persist } from '../storage/persisted';
+import { parseVenues } from '../storage/schema';
+import { KEYS, storageAvailable } from '../storage/storage';
 import type { Venue, VenueSource, VenueStatus } from '../types';
 
 /**
@@ -9,32 +11,15 @@ import type { Venue, VenueSource, VenueStatus } from '../types';
  *
  * - Curated venues ship in code (`data/venues.ts`).
  * - Venues added or edited in the app are kept in this browser's
- *   localStorage. An edit to a curated venue is stored as a local override
+ *   localStorage (via src/storage, key KEYS.venues). An edit to a curated venue is stored as a local override
  *   with the same id, so it can be reverted.
  * - Sample venues are read-only placeholders and never persisted.
  */
 
-const STORAGE_KEY = 'date-planner.venues.v1';
+const LABEL = 'Venue lokal';
 
 function readLocal(): Venue[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map(parseStoredVenue).filter((v): v is Venue => v !== null);
-  } catch {
-    return [];
-  }
-}
-
-function writeLocal(venues: Venue[]): boolean {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(venues));
-    return true;
-  } catch {
-    return false;
-  }
+  return loadCollection(KEYS.venues, parseVenues, LABEL);
 }
 
 function slug(text: string): string {
@@ -67,6 +52,8 @@ interface VenueStore {
   /** Deletes a local venue, or reverts a curated venue's local edit. */
   removeLocal: (id: string) => void;
   clearLocal: () => void;
+  /** Replaces all local venues (backup import / restore). Returns false if not saved. */
+  replaceLocal: (venues: Venue[]) => boolean;
 }
 
 const VenueStoreContext = createContext<VenueStore | null>(null);
@@ -76,16 +63,30 @@ const sampleIds = new Set(SAMPLE_VENUES.map((v) => v.id));
 
 export function VenueStoreProvider({ children }: { children: ReactNode }) {
   const [localVenues, setLocalVenues] = useState<Venue[]>(readLocal);
-  const [persistenceAvailable, setPersistenceAvailable] = useState(true);
+  const [persistenceAvailable, setPersistenceAvailable] = useState(storageAvailable);
 
   const latest = useRef(localVenues);
   latest.current = localVenues;
 
-  const commit = useCallback((updater: (prev: Venue[]) => Venue[]) => {
+  const commit = useCallback((updater: (prev: Venue[]) => Venue[]): boolean => {
     const next = updater(latest.current);
     latest.current = next;
-    setPersistenceAvailable(writeLocal(next));
+    const saved = persist(KEYS.venues, next, LABEL);
+    setPersistenceAvailable(saved);
     setLocalVenues(next);
+    return saved;
+  }, []);
+
+  // Another tab changed the venues.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== KEYS.venues) return;
+      const fresh = readLocal();
+      latest.current = fresh;
+      setLocalVenues(fresh);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   const realVenues = useMemo(() => {
@@ -143,6 +144,14 @@ export function VenueStoreProvider({ children }: { children: ReactNode }) {
 
   const clearLocal = useCallback(() => commit(() => []), [commit]);
 
+  const replaceLocal = useCallback(
+    (venues: Venue[]) => {
+      const clean = venues.filter((v) => !v.isSample && !sampleIds.has(v.id));
+      return commit(() => clean);
+    },
+    [commit],
+  );
+
   const value = useMemo<VenueStore>(
     () => ({
       venues,
@@ -156,8 +165,9 @@ export function VenueStoreProvider({ children }: { children: ReactNode }) {
       setStatus,
       removeLocal,
       clearLocal,
+      replaceLocal,
     }),
-    [venues, realVenues, localVenues, persistenceAvailable, getVenue, sourceOf, isOverridden, saveVenue, setStatus, removeLocal, clearLocal],
+    [venues, realVenues, localVenues, persistenceAvailable, getVenue, sourceOf, isOverridden, saveVenue, setStatus, removeLocal, clearLocal, replaceLocal],
   );
 
   return <VenueStoreContext.Provider value={value}>{children}</VenueStoreContext.Provider>;

@@ -210,6 +210,8 @@ export interface TransportPlan {
 
 export interface DatePlan {
   id: string;
+  /** Optional name given by the user; shown instead of the generated title. */
+  name?: string;
   title: string;
   concept: string;
   input: DateInput;
@@ -222,6 +224,15 @@ export interface DatePlan {
   editedAt?: string; // ISO
   /** True when the plan was assembled from sample (non-real) venues. */
   usesSampleVenues: boolean;
+}
+
+/** Default answers for the Create Date form. */
+export interface Preferences {
+  vibe: Vibe;
+  activities: Activity[];
+  environment: Environment;
+  durationHours: number;
+  startTime: string; // HH:mm
 }
 
 export interface Settings {

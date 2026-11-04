@@ -15,7 +15,11 @@ export type IconName =
   | 'external'
   | 'store'
   | 'arrow-up'
-  | 'arrow-down';
+  | 'arrow-down'
+  | 'copy'
+  | 'download'
+  | 'upload'
+  | 'shield';
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
@@ -33,6 +37,10 @@ const PATHS: Record<IconName, string> = {
   check: 'M5 12.5 10 17 19 7',
   'arrow-up': 'M12 19V5M5 12l7-7 7 7',
   'arrow-down': 'M12 5v14M19 12l-7 7-7-7',
+  copy: 'M9 9h11v11H9zM5 15H4V4h11v1',
+  download: 'M12 4v11M7 10l5 5 5-5M5 20h14',
+  upload: 'M12 20V9M7 14l5-5 5 5M5 4h14',
+  shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
   navigation: 'M3 11 21 3l-8 18-2-8z',
   external: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
   store: 'M4 9l1.5-5h13L20 9M4 9h16M4 9v11h16V9M9 20v-6h6v6',

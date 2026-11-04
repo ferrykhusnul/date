@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { Backup } from './pages/Backup';
 import { CreateDate } from './pages/CreateDate';
 import { DateResult } from './pages/DateResult';
 import { Home } from './pages/Home';
@@ -24,6 +25,7 @@ export function App() {
         <Route path="venue/:id/ubah" element={<VenueForm key="edit" />} />
         <Route path="tersimpan" element={<SavedDates />} />
         <Route path="pengaturan" element={<Settings />} />
+        <Route path="cadangan" element={<Backup />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

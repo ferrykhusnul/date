@@ -29,7 +29,7 @@ const NOTES_MAX = 300;
 
 export function CreateDate() {
   const navigate = useNavigate();
-  const { settings, formSeed, setFormSeed, draft, setDraft } = useAppState();
+  const { settings, preferences, formSeed, setFormSeed, draft, setDraft } = useAppState();
   const { realVenues } = useVenues();
 
   const [values, setValues] = useState<DateInput>(
@@ -37,13 +37,13 @@ export function CreateDate() {
       formSeed ?? {
         city: settings.defaultCity,
         date: todayISO(),
-        startTime: '18:00',
-        durationHours: 3,
+        startTime: preferences.startTime,
+        durationHours: preferences.durationHours,
         budget: settings.defaultBudget,
-        vibe: 'romantis',
-        activities: ['makan', 'kopi'],
+        vibe: preferences.vibe,
+        activities: [...preferences.activities],
         transportation: settings.defaultTransportation,
-        environment: 'mixed',
+        environment: preferences.environment,
         notes: '',
       },
   );

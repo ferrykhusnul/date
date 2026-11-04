@@ -1,28 +1,38 @@
 import { Link } from 'react-router-dom';
-import { formatDateShort, formatIDR } from '../lib/format';
 import { computeBudget } from '../engine/budget';
 import { planEndTime } from '../engine/itinerary';
-import type { DatePlan } from '../types';
+import { formatDateShort, formatIDR } from '../lib/format';
+import { planDisplayName } from '../state/AppState';
 import { useVenues } from '../state/VenueStore';
+import type { DatePlan } from '../types';
 import { Icon } from './Icon';
 import { SampleBadge } from './SampleBadge';
+
+export function formatDateTimeShort(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 export function PlanCard({
   plan,
   variant = 'compact',
   onDelete,
+  onDuplicate,
 }: {
   plan: DatePlan;
   variant?: 'compact' | 'preview';
   onDelete?: (id: string) => void;
+  onDuplicate?: (id: string) => void;
 }) {
   const { getVenue } = useVenues();
   const budget = computeBudget(plan);
-  const total = budget.totalEstimate;
-  const over = budget.status === 'over';
+  const name = planDisplayName(plan);
+  const hasActions = Boolean(onDelete || onDuplicate);
+
   return (
     <article className={`plan-card plan-card--${variant}`}>
-      <Link to={`/rencana/${plan.id}`} className="plan-card-link">
+      <Link to={`/rencana/${encodeURIComponent(plan.id)}`} className="plan-card-link">
         <div className="plan-card-meta">
           <span>{formatDateShort(plan.input.date)}</span>
           <span aria-hidden="true">·</span>
@@ -31,7 +41,8 @@ export function PlanCard({
           </span>
           {plan.usesSampleVenues && <SampleBadge label="Venue sampel" />}
         </div>
-        <h3 className="plan-card-title">{plan.title}</h3>
+        <h3 className="plan-card-title">{name}</h3>
+        {plan.name && plan.name !== plan.title && <p className="muted small">{plan.title}</p>}
         {variant === 'preview' && (
           <ol className="plan-card-stops">
             {plan.items.map((s) => (
@@ -46,23 +57,30 @@ export function PlanCard({
           <span>
             {plan.items.length} aktivitas · {plan.input.city}
           </span>
-          <span className={over ? 'text-warn' : undefined}>
-            ± {formatIDR(total)}
+          <span className={budget.status === 'over' ? 'text-warn' : undefined}>
+            ± {formatIDR(budget.totalEstimate)}
             {!budget.complete && '*'}
           </span>
         </div>
+        <p className="plan-card-dates">
+          Dibuat {formatDateTimeShort(plan.createdAt)}
+          {plan.editedAt && ` · diubah ${formatDateTimeShort(plan.editedAt)}`}
+        </p>
       </Link>
-      {onDelete && (
-        <button
-          type="button"
-          className="icon-button plan-card-delete"
-          aria-label={`Hapus ${plan.title}`}
-          onClick={() => onDelete(plan.id)}
-        >
-          <Icon name="trash" size={18} />
-        </button>
-      )}
-      {!onDelete && (
+      {hasActions ? (
+        <div className="plan-card-actions">
+          {onDuplicate && (
+            <button type="button" className="icon-button" aria-label={`Duplikat ${name}`} title="Duplikat" onClick={() => onDuplicate(plan.id)}>
+              <Icon name="copy" size={18} />
+            </button>
+          )}
+          {onDelete && (
+            <button type="button" className="icon-button" aria-label={`Hapus ${name}`} title="Hapus" onClick={() => onDelete(plan.id)}>
+              <Icon name="trash" size={18} />
+            </button>
+          )}
+        </div>
+      ) : (
         <span className="plan-card-arrow" aria-hidden="true">
           <Icon name="arrow-right" size={18} />
         </span>
