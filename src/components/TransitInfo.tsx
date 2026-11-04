@@ -63,7 +63,7 @@ export function TransitAccessList({
             <ExternalLink
               className="text-link small"
               href={buildRouteUrl(stationQuery(a, venue.city), mapsQuery(venue), 'walking')}
-              label={`Rute jalan kaki dari ${a.stationName} ke ${venue.name}`}
+              label={`Rute jalan kaki dari stasiun ${a.stationName} ke ${venue.name}`}
             >
               Rute jalan kaki dari stasiun <Icon name="external" size={12} />
             </ExternalLink>

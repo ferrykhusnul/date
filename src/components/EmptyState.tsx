@@ -14,7 +14,7 @@ export function EmptyState({
       <div className="empty-ornament" aria-hidden="true">
         ✦
       </div>
-      <h3>{title}</h3>
+      <h2 className="empty-title">{title}</h2>
       <p>{body}</p>
       {actions && <div className="empty-actions">{actions}</div>}
     </div>

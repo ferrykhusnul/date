@@ -2,7 +2,16 @@
 
 Mobile-first date planning app (React + TypeScript + Vite).
 
-## Status: Phase 6 — PWA & offline
+## Status: Phase 7 — quality assurance & deployment readiness
+
+Audited and tested end to end (see "Test suites" below); deployable as a
+static site on Vercel (see "Deployment"). Phase 7 fixes: colour contrast
+raised to WCAG AA in light and dark mode, Maps link accessible names now
+start with their visible text, heading levels corrected on list pages, and
+dev-only dependency advisories reduced (no critical/high remain; production
+dependencies have none).
+
+## Phase 6 — PWA & offline
 
 Date Planner is an installable Progressive Web App (Android/Chrome
 "Instal aplikasi"), built with `vite-plugin-pwa` (Workbox `generateSW`).
@@ -167,11 +176,61 @@ Plans, drafts and settings are still in memory only (reset on reload).
 ## Scripts
 
 ```bash
-npm install
-npm run dev        # development server
-npm run typecheck  # tsc --noEmit
-npm test           # unit tests (engine, storage/backup/migrations, Maps URLs, filters)
-npm run build      # typecheck + production build (includes the service worker)
-npm run preview    # serve the build locally to try offline/installation
-node scripts/generate-icons.mjs  # re-render app icons (needs Playwright)
+npm ci                 # install exact locked dependencies
+npm run dev            # development server (no service worker)
+npm run typecheck      # tsc --noEmit
+npm test               # unit tests (Vitest)
+npm run build          # typecheck + production build (includes the service worker)
+npm run preview        # serve the build locally to try offline/installation
+npm run test:e2e       # browser tests (Playwright) against the production build
+npm run check          # typecheck + unit tests + build
+node scripts/generate-icons.mjs   # re-render app icons (needs Playwright)
 ```
+
+Browser tests need a Chromium: run `npx playwright install chromium` once, or
+point `PW_CHROMIUM_PATH` at an existing Chromium binary.
+
+### Test suites
+
+- **Unit (`src/**/*.test.ts`)**: scoring, budget, generator edge cases and
+  an invariant sweep over 840 input combinations (duplicates, duration,
+  budget arithmetic, determinism), itinerary edits, transport rules, Maps
+  and transit URLs, venue filters/validation, storage, migrations, backup
+  import/export.
+- **Browser (`e2e/`)**: the complete user flow (create → generate → venue →
+  Maps → edit → save → reload → open → duplicate → export → import →
+  delete), PWA manifest/installability/offline, storage corruption and
+  invalid imports, navigation, no horizontal overflow at 320–1440 px,
+  public-transport routes, and an axe-core accessibility scan in light and
+  dark mode.
+
+## Deployment (Vercel, static)
+
+The app is a static SPA: no server code, no API keys, no environment
+variables, no backend. `vercel.json` sets the build (`npm ci`,
+`npm run build`, output `dist/`), the SPA fallback (all routes →
+`index.html`; real files such as `sw.js` and `assets/*` are served first),
+no-cache headers for `sw.js` and the manifest so updates reach users,
+long-term caching for hashed assets, and basic security headers.
+
+1. Push the repository to GitHub.
+2. In Vercel: **Add New → Project**, import the repository. The settings
+   are read from `vercel.json` (framework: Vite). No environment variables
+   are needed.
+3. Deploy. Every push to the production branch redeploys; open apps show
+   "Versi baru tersedia" and update when the user taps "Muat ulang".
+
+CLI alternative: `npx vercel` (preview) and `npx vercel --prod`.
+
+Any static host works the same way if it serves `dist/` over HTTPS and
+falls back to `index.html` for unknown paths.
+
+## Installing on Android
+
+1. Open the deployed HTTPS URL in **Chrome**.
+2. Use **Pengaturan → Aplikasi & offline → Pasang aplikasi**, or Chrome's
+   menu **⋮ → Instal aplikasi / Tambahkan ke layar utama**.
+3. Open Date Planner from the home screen. After the first load it works
+   offline.
+
+On iOS (Safari): Share → **Tambahkan ke Layar Utama**.

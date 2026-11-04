@@ -29,15 +29,15 @@ export function MapsLinks({ venue, compact = false }: { venue: Venue; compact?: 
   return (
     <div className="maps-links">
       <div className="maps-buttons">
-        <ExternalLink href={buildSearchUrl(venue)} className={cls} label={`Cari ${venue.name} di Google Maps`}>
+        <ExternalLink href={buildSearchUrl(venue)} className={cls} label={`Cari di Maps: ${venue.name}`}>
           <Icon name="map" size={18} /> Cari di Maps
         </ExternalLink>
-        <ExternalLink href={buildDirectionsUrl(venue)} className={cls} label={`Petunjuk arah ke ${venue.name}`}>
+        <ExternalLink href={buildDirectionsUrl(venue)} className={cls} label={`Petunjuk arah: ${venue.name}`}>
           <Icon name="navigation" size={18} /> Petunjuk arah
         </ExternalLink>
         {!compact &&
           (listing ? (
-            <ExternalLink href={listing} className={cls} label={`Listing dan ulasan ${venue.name} di Google Maps`}>
+            <ExternalLink href={listing} className={cls} label={`Listing & ulasan: ${venue.name} di Google Maps`}>
               <Icon name="external" size={18} /> Listing &amp; ulasan
             </ExternalLink>
           ) : (

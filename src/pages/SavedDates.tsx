@@ -99,7 +99,7 @@ export function SavedDates() {
           ) : (
             <div className="saved-grid">
               {results.map((p) => (
-                <PlanCard key={p.id} plan={p} variant="preview" onDelete={onDelete} onDuplicate={onDuplicate} />
+                <PlanCard key={p.id} plan={p} variant="preview" headingLevel={2} onDelete={onDelete} onDuplicate={onDuplicate} />
               ))}
             </div>
           )}

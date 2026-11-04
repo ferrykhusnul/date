@@ -10,9 +10,9 @@
   --paper-sunk: #eee6db;
   --ink: #1f1a17;
   --ink-soft: #5b524b;
-  --ink-faint: #8b8178;
+  --ink-faint: #6b625a; /* ≥ 4.5:1 on all light surfaces */
   --line: #ded3c5;
-  --accent: #b4532a;
+  --accent: #9c4220; /* ≥ 4.5:1 on all light surfaces, incl. accent-soft */
   --accent-ink: #fffaf4;
   --accent-soft: #f3dccd;
   --ok: #3f6b4a;
@@ -59,7 +59,7 @@
     --paper-sunk: #2a2521;
     --ink: #f2ebe2;
     --ink-soft: #c2b8ad;
-    --ink-faint: #8f857b;
+    --ink-faint: #a39a90;
     --line: #3a332d;
     --accent: #e0835a;
     --accent-ink: #1b1411;
@@ -555,7 +555,8 @@ textarea {
   color: var(--accent);
 }
 
-.empty-state h3 {
+.empty-state h3,
+.empty-state .empty-title {
   font-size: var(--text-xl);
 }
 
@@ -1333,7 +1334,8 @@ textarea {
 
 .verified-badge {
   background: color-mix(in srgb, var(--ok) 15%, transparent);
-  color: var(--ok);
+  /* Mixed toward ink: darker in light mode, lighter in dark mode (contrast ≥ 4.5:1). */
+  color: color-mix(in srgb, var(--ok) 70%, var(--ink));
 }
 
 .filter-panel {

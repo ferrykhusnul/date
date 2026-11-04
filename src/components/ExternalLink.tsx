@@ -4,6 +4,7 @@ import { useOnlineStatus } from '../pwa/useOnlineStatus';
 /**
  * Opens an external URL in a new tab without giving the new page access to
  * this one (noopener) or leaking the referring URL (noreferrer).
+ * `label` must START with the visible text (WCAG 2.5.3 Label in Name).
  */
 export function ExternalLink({
   href,

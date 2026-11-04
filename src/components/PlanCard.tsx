@@ -19,7 +19,10 @@ export function PlanCard({
   variant = 'compact',
   onDelete,
   onDuplicate,
+  headingLevel = 3,
 }: {
+  /** 2 when the card sits directly under the page heading. */
+  headingLevel?: 2 | 3;
   plan: DatePlan;
   variant?: 'compact' | 'preview';
   onDelete?: (id: string) => void;
@@ -41,7 +44,7 @@ export function PlanCard({
           </span>
           {plan.usesSampleVenues && <SampleBadge label="Venue sampel" />}
         </div>
-        <h3 className="plan-card-title">{name}</h3>
+        {headingLevel === 2 ? <h2 className="plan-card-title">{name}</h2> : <h3 className="plan-card-title">{name}</h3>}
         {plan.name && plan.name !== plan.title && <p className="muted small">{plan.title}</p>}
         {variant === 'preview' && (
           <ol className="plan-card-stops">

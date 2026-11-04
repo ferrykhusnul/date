@@ -21,7 +21,7 @@ export function VenueCard({ venue }: { venue: Venue }) {
             {!venue.isSample && venue.verifiedAt && <span className="verified-badge">Terverifikasi</span>}
           </span>
         </div>
-        <h3 className="venue-card-name">{venue.name}</h3>
+        <h2 className="venue-card-name">{venue.name}</h2>
         <p className="venue-card-address">
           <Icon name="pin" size={14} />
           <span>
