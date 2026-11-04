@@ -4,6 +4,7 @@ import { ChipGroup, MultiChipGroup } from '../components/ChipGroup';
 import { CurrencyInput } from '../components/CurrencyInput';
 import { PageHeader } from '../components/PageHeader';
 import { formatIDR, todayISO } from '../lib/format';
+import type { PlanIssue } from '../types';
 import {
   ACTIVITY_OPTIONS,
   BUDGET_PRESETS,
@@ -13,27 +14,17 @@ import {
   TRANSPORT_OPTIONS,
   VIBE_OPTIONS,
 } from '../lib/options';
-import { generatePlan } from '../lib/planGenerator';
+import { generateItinerary } from '../engine/generator';
+import { validateDateInput as validate, type InputErrors } from '../engine/validation';
 import { citiesOf, plannableVenues } from '../lib/venueFilters';
 import { SAMPLE_VENUES } from '../data/sampleVenues';
 import { useAppState } from '../state/AppState';
 import { useVenues } from '../state/VenueStore';
 import type { DateInput } from '../types';
 
-type Errors = Partial<Record<keyof DateInput, string>>;
+type Errors = InputErrors;
 
 const NOTES_MAX = 300;
-
-function validate(v: DateInput): Errors {
-  const e: Errors = {};
-  if (!v.city.trim()) e.city = 'Kota wajib diisi.';
-  if (!v.date) e.date = 'Tanggal wajib diisi.';
-  else if (v.date < todayISO()) e.date = 'Tanggal tidak boleh di masa lalu.';
-  if (!v.startTime) e.startTime = 'Jam mulai wajib diisi.';
-  if (v.budget < 50_000) e.budget = `Anggaran minimal ${formatIDR(50_000)}.`;
-  if (v.activities.length === 0) e.activities = 'Pilih minimal satu aktivitas.';
-  return e;
-}
 
 export function CreateDate() {
   const navigate = useNavigate();
@@ -57,6 +48,7 @@ export function CreateDate() {
   );
   const [errors, setErrors] = useState<Errors>({});
   const [submitted, setSubmitted] = useState(false);
+  const [blocking, setBlocking] = useState<PlanIssue[]>([]);
   // Captured once: the seed is consumed on mount so a later visit starts fresh.
   const [editing] = useState(() => Boolean(formSeed && draft));
   useEffect(() => {
@@ -72,6 +64,7 @@ export function CreateDate() {
     const next = { ...values, [key]: val };
     setValues(next);
     if (submitted) setErrors(validate(next));
+    if (blocking.length) setBlocking([]);
   };
 
   const onSubmit = (e: FormEvent) => {
@@ -85,16 +78,22 @@ export function CreateDate() {
       return;
     }
     const usesSampleVenues = cityPool.length === 0;
-    const pool = usesSampleVenues ? (settings.useSampleVenues ? SAMPLE_VENUES : []) : cityPool;
-    const plan = generatePlan({ ...values, city: values.city.trim(), notes: values.notes.trim() }, pool, {
-      usesSampleVenues,
-      existingId: editing ? draft?.id : undefined,
-    });
+    const { plan, issues } = generateItinerary(
+      { ...values, city: values.city.trim(), notes: values.notes.trim() },
+      usesSampleVenues ? (settings.useSampleVenues ? SAMPLE_VENUES : []) : realVenues,
+      {
+        planId: editing && draft ? draft.id : `plan-${Date.now().toString(36)}`,
+        createdAt: new Date().toISOString(),
+        ignoreCity: usesSampleVenues,
+        usesSampleVenues,
+      },
+    );
     if (!plan) {
-      setErrors({ city: 'Belum ada venue aktif di kota ini.' });
-      document.getElementById('f-city')?.focus();
+      setBlocking(issues);
+      document.getElementById('generation-error')?.focus();
       return;
     }
+    setBlocking([]);
     setDraft(plan);
     navigate('/hasil');
   };
@@ -283,6 +282,17 @@ export function CreateDate() {
             </p>
           </div>
         </section>
+
+        {blocking.length > 0 && (
+          <div className="issue-list" id="generation-error" tabIndex={-1} role="alert">
+            {blocking.map((issue) => (
+              <p key={issue.code} className={`issue issue-${issue.severity}`}>
+                {issue.message}{' '}
+                {issue.code === 'NO_VENUES' && <Link to="/venue/baru" className="text-link">Tambah venue</Link>}
+              </p>
+            ))}
+          </div>
+        )}
 
         <div className="form-actions sticky-actions">
           <button type="submit" className="button button-primary button-lg button-block" disabled={noVenues}>

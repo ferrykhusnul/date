@@ -43,7 +43,7 @@ export function filterVenues(venues: Venue[], f: VenueFilter): Venue[] {
     if (f.activity && !v.activities.includes(f.activity)) return false;
     if (f.vibe && !v.vibes.includes(f.vibe)) return false;
     if (f.environment && v.environment !== f.environment) return false;
-    if (f.maxPrice > 0 && v.priceMin > f.maxPrice) return false;
+    if (f.maxPrice > 0 && (v.priceUnknown || v.priceMin > f.maxPrice)) return false;
     if (q) {
       const hay = [v.name, v.address, v.district ?? '', v.city, v.description].join(' ').toLowerCase();
       if (!hay.includes(q)) return false;

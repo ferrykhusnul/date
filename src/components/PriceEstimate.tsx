@@ -7,7 +7,8 @@ export function priceRangeText(min: number, max: number): string {
   return `${min === 0 ? 'Gratis' : formatIDR(min)} – ${formatIDR(max)}`;
 }
 
-export function PriceEstimate({ min, max }: { min: number; max: number }) {
+export function PriceEstimate({ min, max, unknown }: { min: number; max: number; unknown?: boolean }) {
+  if (unknown) return <span className="price-estimate price-unknown">Harga belum diketahui</span>;
   return (
     <span className="price-estimate">
       <span className="price-estimate-label">Perkiraan</span> {priceRangeText(min, max)}

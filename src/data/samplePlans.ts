@@ -1,4 +1,4 @@
-import { generatePlan } from '../lib/planGenerator';
+import { generateItinerary } from '../engine/generator';
 import type { DateInput, DatePlan } from '../types';
 import { SAMPLE_CITY, SAMPLE_VENUES } from './sampleVenues';
 
@@ -35,7 +35,14 @@ const INPUTS: DateInput[] = [
 
 export function buildSamplePlans(): DatePlan[] {
   const now = new Date().toISOString();
-  return INPUTS.map((input) => generatePlan(input, SAMPLE_VENUES, { usesSampleVenues: true }))
+  return INPUTS.map((input, i) =>
+    generateItinerary(input, SAMPLE_VENUES, {
+      planId: `contoh-${i + 1}-${Date.now().toString(36)}`,
+      createdAt: now,
+      ignoreCity: true,
+      usesSampleVenues: true,
+    }).plan,
+  )
     .filter((p): p is DatePlan => p !== null)
     .map((p) => ({ ...p, savedAt: now }));
 }

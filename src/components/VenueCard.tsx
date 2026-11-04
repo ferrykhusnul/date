@@ -32,7 +32,7 @@ export function VenueCard({ venue }: { venue: Venue }) {
           {venue.activities.map((a) => labelOf(ACTIVITY_OPTIONS, a as Activity)).join(' · ')}
         </p>
         <div className="venue-card-foot">
-          <PriceEstimate min={venue.priceMin} max={venue.priceMax} />
+          <PriceEstimate min={venue.priceMin} max={venue.priceMax} unknown={venue.priceUnknown} />
           <span className="text-link">
             Detail <Icon name="arrow-right" size={14} />
           </span>

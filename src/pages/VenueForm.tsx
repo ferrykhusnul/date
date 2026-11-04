@@ -36,6 +36,7 @@ const BLANK: FormValues = {
   district: '',
   priceMin: 0,
   priceMax: 0,
+  priceUnknown: false,
   visitDurationMinutes: 60,
   vibes: [],
   activities: [],
@@ -53,6 +54,7 @@ function toForm(v: Venue): FormValues {
   return {
     ...BLANK,
     ...v,
+    priceUnknown: Boolean(v.priceUnknown),
     district: v.district ?? '',
     verifiedAt: v.verifiedAt ?? '',
     transitAccess: v.transitAccess ?? '',
@@ -75,8 +77,9 @@ function toVenue(f: FormValues, id: string): Venue {
     address: f.address.trim(),
     city: f.city.trim(),
     district: opt(f.district),
-    priceMin: f.priceMin,
-    priceMax: f.priceMax,
+    priceMin: f.priceUnknown ? 0 : f.priceMin,
+    priceMax: f.priceUnknown ? 0 : f.priceMax,
+    priceUnknown: f.priceUnknown ? true : undefined,
     visitDurationMinutes: f.visitDurationMinutes,
     vibes: f.vibes,
     activities: f.activities,
@@ -238,6 +241,15 @@ export function VenueForm() {
 
         <section className="form-section">
           <h2 className="form-section-title"><span className="step">03</span> Perkiraan harga &amp; durasi</h2>
+          <label className="switch">
+            <input id="v-priceUnknown" type="checkbox" checked={Boolean(values.priceUnknown)}
+              onChange={(e) => set('priceUnknown', e.target.checked)} />
+            <span>
+              Harga belum diketahui
+              <span className="field-hint block">Perencana tidak akan menebak harga; venue ini ditandai "harga belum diketahui" di rencana.</span>
+            </span>
+          </label>
+          {!values.priceUnknown && (
           <div className="field-row">
             <div className="field">
               <label className="field-label" htmlFor="v-priceMin">Perkiraan min. /orang</label>
@@ -252,6 +264,7 @@ export function VenueForm() {
               {err('priceMax')}
             </div>
           </div>
+          )}
           <div className="field">
             <label className="field-label" htmlFor="v-visitDurationMinutes">Lama kunjungan biasa (menit)</label>
             <input id="v-visitDurationMinutes" className="input" type="number" inputMode="numeric" min={15} max={720} step={15}

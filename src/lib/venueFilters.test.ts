@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_VENUES } from '../data/sampleVenues';
 import type { Venue } from '../types';
-import { generatePlan } from './planGenerator';
 import { EMPTY_FILTER, citiesOf, filterVenues, plannableVenues } from './venueFilters';
 import { parseStoredVenue, validateVenue } from './venueValidation';
 
@@ -79,30 +78,5 @@ describe('parseStoredVenue', () => {
     expect(v?.vibes).toEqual(['santai']);
     expect(v?.status).toBe('active');
     expect(v?.isSample).toBeUndefined();
-  });
-});
-
-describe('generatePlan', () => {
-  const input = {
-    city: 'Jakarta',
-    date: '2026-12-01',
-    startTime: '18:00',
-    durationHours: 3,
-    budget: 500_000,
-    vibe: 'romantis' as const,
-    activities: ['makan' as const, 'kopi' as const],
-    transportation: 'motor' as const,
-    environment: 'mixed' as const,
-    notes: '',
-  };
-  it('returns null for an empty pool', () => {
-    expect(generatePlan(input, [], { usesSampleVenues: false })).toBeNull();
-  });
-  it('uses only pool venues, matching activities and without repeats', () => {
-    const pool = plannableVenues(venues, 'Jakarta');
-    const plan = generatePlan(input, pool, { usesSampleVenues: false })!;
-    expect(plan.stops.map((s) => s.venueId)).toEqual(['b', 'a']);
-    expect(plan.stops[0].activity).toBe('makan');
-    expect(plan.usesSampleVenues).toBe(false);
   });
 });

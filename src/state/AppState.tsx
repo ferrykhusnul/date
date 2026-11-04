@@ -24,6 +24,8 @@ interface AppState {
   setFormSeed: (input: DateInput | null) => void;
   savedPlans: DatePlan[];
   savePlan: (plan: DatePlan) => DatePlan;
+  /** Replaces a saved plan in place (used by inline itinerary edits). */
+  updateSavedPlan: (plan: DatePlan) => void;
   deletePlan: (id: string) => void;
   loadSamplePlans: () => void;
   clearSavedPlans: () => void;
@@ -42,6 +44,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const saved: DatePlan = { ...plan, savedAt: new Date().toISOString() };
     setSavedPlans((prev) => [saved, ...prev.filter((p) => p.id !== plan.id)]);
     return saved;
+  }, []);
+
+  const updateSavedPlan = useCallback((plan: DatePlan) => {
+    setSavedPlans((prev) => prev.map((p) => (p.id === plan.id ? plan : p)));
   }, []);
 
   const deletePlan = useCallback((id: string) => {
@@ -69,12 +75,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setFormSeed,
       savedPlans,
       savePlan,
+      updateSavedPlan,
       deletePlan,
       loadSamplePlans,
       clearSavedPlans,
       getSavedPlan,
     }),
-    [settings, draft, formSeed, savedPlans, savePlan, deletePlan, loadSamplePlans, clearSavedPlans, getSavedPlan],
+    [settings, draft, formSeed, savedPlans, savePlan, updateSavedPlan, deletePlan, loadSamplePlans, clearSavedPlans, getSavedPlan],
   );
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

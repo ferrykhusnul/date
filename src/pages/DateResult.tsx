@@ -1,35 +1,55 @@
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
 import { Icon } from '../components/Icon';
 import { PageHeader } from '../components/PageHeader';
-import { SampleBadge, SampleNotice } from '../components/SampleBadge';
-import { MapsLinks } from '../components/MapsLinks';
-import { formatDateLong, formatDuration, formatIDR } from '../lib/format';
+import { SampleNotice } from '../components/SampleBadge';
+import { AddCustomActivity } from '../components/itinerary/AddCustomActivity';
+import { BudgetCard } from '../components/itinerary/BudgetCard';
+import { IssueList } from '../components/itinerary/IssueList';
+import { ItineraryItemCard, type ItemHandlers } from '../components/itinerary/ItineraryItemCard';
+import { SAMPLE_VENUES } from '../data/sampleVenues';
+import { computeBudget } from '../engine/budget';
 import {
-  ACTIVITY_OPTIONS,
-  categoryLabel,
-  ENVIRONMENT_OPTIONS,
-  TRANSPORT_OPTIONS,
-  VIBE_OPTIONS,
-  labelOf,
-} from '../lib/options';
-import { planEndTime, planTotal } from '../lib/planGenerator';
+  addCustomItem,
+  moveItem,
+  planEndTime,
+  removeItem,
+  replaceVenue,
+  setCost,
+  setDuration,
+  type CustomActivityInput,
+} from '../engine/itinerary';
+import { validatePlan } from '../engine/validation';
+import { formatDateLong, formatDuration } from '../lib/format';
+import { ENVIRONMENT_OPTIONS, TRANSPORT_OPTIONS, VIBE_OPTIONS, labelOf } from '../lib/options';
+import { plannableVenues } from '../lib/venueFilters';
 import { useAppState } from '../state/AppState';
 import { useVenues } from '../state/VenueStore';
-import type { DatePlan } from '../types';
+import type { DatePlan, Venue } from '../types';
 
-/** Shows the current draft (/hasil) or a saved plan (/rencana/:id). */
+/** Shows and edits the current draft (/hasil) or a saved plan (/rencana/:id). */
 export function DateResult() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { draft, setDraft, setFormSeed, savePlan, getSavedPlan, deletePlan } = useAppState();
-  const { getVenue } = useVenues();
+  const { draft, setDraft, setFormSeed, savePlan, updateSavedPlan, getSavedPlan, deletePlan } = useAppState();
+  const { getVenue, realVenues } = useVenues();
+  const [editing, setEditing] = useState(false);
 
   const plan: DatePlan | null | undefined = id ? getSavedPlan(id) : draft;
   const isDraft = !id;
   const alreadySaved = plan ? Boolean(getSavedPlan(plan.id)) : false;
 
-  if (!plan) {
+  const budget = useMemo(() => (plan ? computeBudget(plan) : null), [plan]);
+  const liveIssues = useMemo(() => (plan ? validatePlan(plan, getVenue) : []), [plan, getVenue]);
+
+  /** Venues this plan may draw replacements from. */
+  const pool: Venue[] = useMemo(() => {
+    if (!plan) return [];
+    return plan.usesSampleVenues ? SAMPLE_VENUES : plannableVenues(realVenues, plan.input.city);
+  }, [plan, realVenues]);
+
+  if (!plan || !budget) {
     return (
       <div className="page page-narrow">
         <PageHeader title={isDraft ? 'Belum ada draf' : 'Rencana tidak ditemukan'} back="/" />
@@ -38,23 +58,49 @@ export function DateResult() {
           body={
             isDraft
               ? 'Buat rencana baru untuk melihat linimasa dan perkiraan biaya.'
-              : 'Rencana mungkin sudah dihapus, atau halaman dimuat ulang (penyimpanan Fase 1 hanya di memori).'
+              : 'Rencana mungkin sudah dihapus, atau halaman dimuat ulang (rencana hanya disimpan di memori).'
           }
-          actions={
-            <Link to="/buat" className="button button-primary">
-              Buat rencana
-            </Link>
-          }
+          actions={<Link to="/buat" className="button button-primary">Buat rencana</Link>}
         />
       </div>
     );
   }
 
-  const total = planTotal(plan);
-  const remaining = plan.input.budget - total;
-  const usedPct = plan.input.budget > 0 ? Math.min(100, Math.round((total / plan.input.budget) * 100)) : 100;
+  const commit = (next: DatePlan) => {
+    const stamped = { ...next, editedAt: new Date().toISOString() };
+    if (isDraft) setDraft(stamped);
+    else updateSavedPlan(stamped);
+  };
 
-  const onEdit = () => {
+  const handlers: ItemHandlers = {
+    onMove: (from, to) => commit(moveItem(plan, from, to, getVenue)),
+    onRemove: (itemId) => commit(removeItem(plan, itemId, getVenue)),
+    onDuration: (itemId, minutes) => commit(setDuration(plan, itemId, minutes, getVenue)),
+    onCost: (itemId, amount) => commit(setCost(plan, itemId, amount, getVenue)),
+    onReplace: (itemId, venueId) => {
+      const venue = getVenue(venueId);
+      if (venue) commit(replaceVenue(plan, itemId, venue, getVenue));
+    },
+  };
+  const onAddCustom = (input: CustomActivityInput) => commit(addCustomItem(plan, input, getVenue));
+
+  const inPlan = new Set(plan.items.map((i) => i.venueId).filter(Boolean));
+  const replacementsFor = (itemId: string) => {
+    const item = plan.items.find((i) => i.id === itemId)!;
+    const altIds = item.alternatives.map((a) => a.venueId);
+    const alts = item.alternatives
+      .map((a) => getVenue(a.venueId))
+      .filter((v): v is Venue => Boolean(v && v.status === 'active' && !inPlan.has(v.id)))
+      .map((v) => ({ venue: v, label: `★ ${v.name} (alternatif)` }));
+    const others = pool
+      .filter((v) => v.status === 'active' && !inPlan.has(v.id) && !altIds.includes(v.id))
+      .sort((a, b) => a.name.localeCompare(b.name, 'id'))
+      .map((v) => ({ venue: v, label: v.name }));
+    return [...alts, ...others];
+  };
+
+  const onEditPreferences = () => {
+    if (plan.editedAt && !window.confirm('Menyusun ulang dari preferensi akan menghapus perubahan manual. Lanjutkan?')) return;
     setDraft(plan);
     setFormSeed(plan.input);
     navigate('/buat');
@@ -63,6 +109,7 @@ export function DateResult() {
   const onSave = () => {
     const saved = savePlan(plan);
     setDraft(null);
+    setEditing(false);
     navigate(`/rencana/${saved.id}`, { replace: true });
   };
 
@@ -72,6 +119,10 @@ export function DateResult() {
       navigate('/tersimpan', { replace: true });
     }
   };
+
+  const fromGeneration = plan.generationIssues.filter((i) => i.code !== 'SAMPLE_VENUES');
+  const generationWarnings = fromGeneration.filter((i) => i.severity !== 'info');
+  const generationNotes = fromGeneration.filter((i) => i.severity === 'info');
 
   return (
     <div className="page page-result">
@@ -90,123 +141,86 @@ export function DateResult() {
         <span className="tag">{labelOf(ENVIRONMENT_OPTIONS, plan.input.environment)}</span>
       </div>
 
-      {plan.usesSampleVenues ? (
+      {plan.usesSampleVenues && (
         <SampleNotice>
-          Belum ada venue nyata di {plan.input.city}, jadi rencana ini memakai venue sampel — bukan
-          rekomendasi tempat nyata. Semua harga adalah perkiraan.
+          Belum ada venue nyata di {plan.input.city}, jadi rencana ini memakai venue sampel — bukan rekomendasi tempat
+          nyata. Semua harga adalah perkiraan.
         </SampleNotice>
-      ) : (
-        <p className="muted small">Semua harga adalah perkiraan berdasarkan dataset venue, bukan harga resmi.</p>
       )}
 
       <div className="result-grid">
         <section className="section result-timeline">
-          <h2 className="section-title">Linimasa</h2>
-          <ol className="timeline">
-            {plan.stops.map((stop, i) => {
-              const venue = getVenue(stop.venueId);
-              return (
-                <li key={stop.id} className="timeline-item">
-                  <div className="timeline-time">
-                    <span className="time">{stop.startTime}</span>
-                    <span className="dur">{formatDuration(stop.durationMinutes)}</span>
-                  </div>
-                  <div className="timeline-marker" aria-hidden="true">
-                    <span>{i + 1}</span>
-                  </div>
-                  <div className="venue-card">
-                    <Link to={`/venue/${encodeURIComponent(stop.venueId)}`} className="venue-card-main">
-                      <div className="venue-card-top">
-                        <span className="venue-category">
-                          {[venue ? categoryLabel(venue.category) : 'Venue', labelOf(ACTIVITY_OPTIONS, stop.activity)]
-                            .filter((v, idx, arr) => arr.indexOf(v) === idx)
-                            .join(' · ')}
-                        </span>
-                        {venue?.isSample && <SampleBadge label="Sampel" />}
-                        {venue && venue.status === 'inactive' && <span className="status-badge">Nonaktif</span>}
-                      </div>
-                      <h3 className="venue-card-name">{venue?.name ?? stop.venueName}</h3>
-                      <p className="venue-card-address">
-                        <Icon name="pin" size={14} />
-                        <span>{venue ? venue.address : 'Venue ini sudah tidak ada di dataset.'}</span>
-                      </p>
-                      <div className="venue-card-foot">
-                        <span>Perkiraan {formatIDR(stop.estimatedCost)} berdua</span>
-                        <span className="text-link">
-                          Detail <Icon name="arrow-right" size={14} />
-                        </span>
-                      </div>
-                    </Link>
-                    {venue && !venue.isSample && <MapsLinks venue={venue} compact />}
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+          <div className="section-head">
+            <h2 className="section-title">Itinerary</h2>
+            <label className="switch switch-inline">
+              <input type="checkbox" checked={editing} onChange={(e) => setEditing(e.target.checked)} />
+              <span>Mode ubah</span>
+            </label>
+          </div>
+          <p className="field-hint">
+            Urutan mengikuti alur aktivitas; rute belum dioptimalkan berdasarkan jarak. Tiap perpindahan diperkirakan{' '}
+            {plan.transport.minutesPerLeg} menit dengan {labelOf(TRANSPORT_OPTIONS, plan.transport.mode).toLowerCase()}.
+            {editing && ' Perubahan langsung menghitung ulang waktu dan biaya.'}
+          </p>
+
+          <IssueList issues={liveIssues} />
+          <IssueList issues={generationWarnings} title="Saat menyusun rencana" />
+
+          {plan.items.length > 0 ? (
+            <ol className="timeline">
+              {plan.items.map((item, i) => (
+                <ItineraryItemCard
+                  key={item.id}
+                  item={item}
+                  index={i}
+                  count={plan.items.length}
+                  venue={item.venueId ? getVenue(item.venueId) : undefined}
+                  editing={editing}
+                  replacements={editing ? replacementsFor(item.id) : []}
+                  handlers={handlers}
+                />
+              ))}
+            </ol>
+          ) : null}
+
+          {editing && <AddCustomActivity onAdd={onAddCustom} />}
+
           {plan.input.notes && (
             <div className="notes-card">
-              <p className="eyebrow">Catatan</p>
+              <p className="eyebrow">Catatanmu</p>
               <p>{plan.input.notes}</p>
             </div>
+          )}
+
+          {generationNotes.length > 0 && (
+            <details className="generation-notes">
+              <summary>Catatan saat menyusun ({generationNotes.length})</summary>
+              <IssueList issues={generationNotes} />
+            </details>
           )}
         </section>
 
         <aside className="section result-aside">
-          <div className="budget-card">
-            <h2 className="section-title">Perkiraan biaya</h2>
-            <p className="muted small">Untuk berdua · semua angka perkiraan</p>
-            <ul className="cost-list">
-              {plan.stops.map((s) => (
-                <li key={s.id}>
-                  <span>{getVenue(s.venueId)?.name ?? s.venueName}</span>
-                  <span>{formatIDR(s.estimatedCost)}</span>
-                </li>
-              ))}
-              <li>
-                <span>Transportasi ({labelOf(TRANSPORT_OPTIONS, plan.input.transportation).toLowerCase()})</span>
-                <span>{formatIDR(plan.transportCost)}</span>
-              </li>
-            </ul>
-            <div className="cost-total">
-              <span>Total perkiraan</span>
-              <strong>{formatIDR(total)}</strong>
-            </div>
-            <div
-              className={`budget-meter${remaining < 0 ? ' is-over' : ''}`}
-              role="meter"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={usedPct}
-              aria-label="Penggunaan anggaran"
-            >
-              <span style={{ width: `${usedPct}%` }} />
-            </div>
-            <dl className="budget-figures">
-              <div>
-                <dt>Anggaran</dt>
-                <dd>{formatIDR(plan.input.budget)}</dd>
-              </div>
-              <div>
-                <dt>{remaining < 0 ? 'Melebihi anggaran' : 'Sisa anggaran'}</dt>
-                <dd className={remaining < 0 ? 'text-warn' : 'text-ok'}>{formatIDR(Math.abs(remaining))}</dd>
-              </div>
-            </dl>
-          </div>
+          <BudgetCard plan={plan} budget={budget} />
 
           <div className="result-actions">
-            <button type="button" className="button button-ghost button-block" onClick={onEdit}>
+            <button type="button" className="button button-ghost button-block" onClick={() => setEditing((e) => !e)}>
               <Icon name="edit" size={18} />
-              Ubah itinerary
+              {editing ? 'Selesai mengubah' : 'Ubah itinerary'}
+            </button>
+            <button type="button" className="button button-ghost button-block" onClick={onEditPreferences}>
+              Susun ulang dari preferensi
             </button>
             {isDraft ? (
-              <button type="button" className="button button-primary button-block" onClick={onSave}>
+              <button type="button" className="button button-primary button-block" onClick={onSave}
+                disabled={plan.items.length === 0}>
                 <Icon name="bookmark" size={18} />
                 {alreadySaved ? 'Simpan perubahan' : 'Simpan rencana'}
               </button>
             ) : (
               <>
                 <p className="saved-note">
-                  <Icon name="check" size={16} /> Tersimpan
+                  <Icon name="check" size={16} /> Tersimpan · perubahan disimpan otomatis
                 </p>
                 <button type="button" className="button button-danger-ghost button-block" onClick={onDelete}>
                   <Icon name="trash" size={18} />

@@ -96,7 +96,7 @@ export function VenueDetail() {
         </div>
         <div>
           <dt>Harga (perkiraan)</dt>
-          <dd><PriceEstimate min={venue.priceMin} max={venue.priceMax} /></dd>
+          <dd><PriceEstimate min={venue.priceMin} max={venue.priceMax} unknown={venue.priceUnknown} /></dd>
         </div>
         <div>
           <dt>Lama kunjungan biasa</dt>

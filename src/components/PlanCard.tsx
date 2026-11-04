@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { formatDateShort, formatIDR } from '../lib/format';
-import { planEndTime, planTotal } from '../lib/planGenerator';
+import { computeBudget } from '../engine/budget';
+import { planEndTime } from '../engine/itinerary';
 import type { DatePlan } from '../types';
 import { useVenues } from '../state/VenueStore';
 import { Icon } from './Icon';
@@ -16,8 +17,9 @@ export function PlanCard({
   onDelete?: (id: string) => void;
 }) {
   const { getVenue } = useVenues();
-  const total = planTotal(plan);
-  const over = total > plan.input.budget;
+  const budget = computeBudget(plan);
+  const total = budget.totalEstimate;
+  const over = budget.status === 'over';
   return (
     <article className={`plan-card plan-card--${variant}`}>
       <Link to={`/rencana/${plan.id}`} className="plan-card-link">
@@ -32,19 +34,22 @@ export function PlanCard({
         <h3 className="plan-card-title">{plan.title}</h3>
         {variant === 'preview' && (
           <ol className="plan-card-stops">
-            {plan.stops.map((s) => (
+            {plan.items.map((s) => (
               <li key={s.id}>
                 <span className="stop-time">{s.startTime}</span>
-                <span>{getVenue(s.venueId)?.name ?? s.venueName}</span>
+                <span>{(s.venueId && getVenue(s.venueId)?.name) || s.title}</span>
               </li>
             ))}
           </ol>
         )}
         <div className="plan-card-foot">
           <span>
-            {plan.stops.length} tempat · {plan.input.city}
+            {plan.items.length} aktivitas · {plan.input.city}
           </span>
-          <span className={over ? 'text-warn' : undefined}>± {formatIDR(total)}</span>
+          <span className={over ? 'text-warn' : undefined}>
+            ± {formatIDR(total)}
+            {!budget.complete && '*'}
+          </span>
         </div>
       </Link>
       {onDelete && (
