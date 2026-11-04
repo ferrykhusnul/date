@@ -1,4 +1,4 @@
-import { expect, navLink, seedVenues, test } from './fixtures';
+import { createDate, expect, navLink, seedVenues, test } from './fixtures';
 
 const ROUTES = ['/', '/buat', '/hasil', '/tersimpan', '/venue', '/venue/baru', '/venue/kafe-uji', '/venue/kafe-uji/ubah', '/pengaturan', '/cadangan', '/rencana/tidak-ada', '/venue/tidak-ada', '/tidak-ada'];
 
@@ -7,11 +7,11 @@ test('every navigation link and route works', async ({ page, consoleErrors }) =>
   await seedVenues(page);
   await page.goto('/');
   const targets: [string, RegExp, string][] = [
-    ['Buat', /\/buat$/, 'Rancang kencanmu'],
-    ['Tersimpan', /\/tersimpan$/, 'Rencana tersimpan'],
-    ['Venue', /\/venue$/, 'Venue'],
-    ['Pengaturan', /\/pengaturan$/, 'Pengaturan'],
-    ['Beranda', /\/$/, 'Selamat'],
+    ['Bikin', /\/buat$/, 'Mau date di mana?'],
+    ['Tersimpan', /\/tersimpan$/, 'Date tersimpan'],
+    ['Tempat', /\/venue$/, 'Tempat'],
+    ['Setelan', /\/pengaturan$/, 'Setelan'],
+    ['Beranda', /\/$/, 'Mau date ke mana nih?'],
   ];
   for (const [label, url, heading] of targets) {
     await (await navLink(page, label)).click();
@@ -24,7 +24,7 @@ test('every navigation link and route works', async ({ page, consoleErrors }) =>
     await expect(page.locator('h1, .empty-state h2').first(), path).toBeVisible();
   }
   await page.goto('/tidak-ada');
-  await expect(page.getByText('Halaman tidak ditemukan')).toBeVisible();
+  await expect(page.getByText('Halaman nggak ketemu')).toBeVisible();
   await page.getByRole('link', { name: 'Ke beranda' }).click();
   await expect(page).toHaveURL(/\/$/);
   // Back links
@@ -42,13 +42,15 @@ for (const width of [320, 360, 768, 1024, 1440]) {
     await seedVenues(page);
     await page.setViewportSize({ width, height: 900 });
     // Create content so the result page has real items.
-    await page.goto('/buat');
-    await page.getByLabel('Kota').fill('Kota Uji');
-    await page.locator('label.chip', { hasText: 'MRT Jakarta' }).click();
-    await page.getByRole('button', { name: 'Susun rencana' }).click();
-    await page.getByLabel('Mode ubah').check();
+    await createDate(page, { transport: 'Transum', transit: 'MRT' });
+    await page.getByRole('checkbox', { name: 'Atur lagi' }).check();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), '/hasil (editing)').toBeLessThanOrEqual(0);
-    await page.getByRole('button', { name: 'Simpan rencana' }).click();
+    const alternatives = page.getByRole('button', { name: 'Opsi lainnya' });
+    if (await alternatives.count()) {
+      await alternatives.first().click();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), '/hasil (opsi lainnya)').toBeLessThanOrEqual(0);
+    }
+    await page.getByRole('button', { name: 'Simpan date' }).click();
     for (const path of ROUTES) {
       await page.goto(path);
       await expect(page.locator('h1, .empty-state h2').first()).toBeVisible();

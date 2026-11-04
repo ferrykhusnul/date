@@ -130,11 +130,11 @@ export function Backup() {
 
   return (
     <div className="page page-narrow">
-      <PageHeader back="/pengaturan" eyebrow="Data" title="Cadangan & impor"
-        lead="Simpan semua data ke file JSON, atau pulihkan dari file cadangan. Semua proses terjadi di perangkat ini." />
+      <PageHeader back="/pengaturan" title="Cadangan"
+        lead="Simpan semua date ke file, atau pulihkan dari file. Semuanya di perangkat ini aja." />
 
       <section className="section backup-card">
-        <h2 className="section-title">Ekspor semua data</h2>
+        <h2 className="section-title">Simpan ke file</h2>
         <p className="muted">
           {data.plans.length} rencana, {data.venues.length} venue lokal, pengaturan, dan preferensi akan disimpan ke satu file
           JSON. Draf yang belum disimpan tidak ikut.
@@ -146,7 +146,7 @@ export function Backup() {
       </section>
 
       <section className="section backup-card">
-        <h2 className="section-title">Impor dari cadangan</h2>
+        <h2 className="section-title">Pulihkan dari file</h2>
 
         {step.kind === 'pick' && (
           <>
@@ -267,7 +267,7 @@ export function Backup() {
           <>
             <p className={`issue ${step.ok ? 'issue-info' : 'issue-error'}`} role="status">{step.message}</p>
             <div className="form-actions inline">
-              <Link to="/tersimpan" className="button button-primary">Lihat rencana tersimpan</Link>
+              <Link to="/tersimpan" className="button button-primary">Lihat date tersimpan</Link>
               <button type="button" className="button button-ghost" onClick={() => setStep({ kind: 'pick' })}>Impor file lain</button>
             </div>
           </>

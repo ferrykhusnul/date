@@ -6,17 +6,19 @@ import { MapsLinks } from './MapsLinks';
 import { PriceEstimate } from './PriceEstimate';
 import { SampleBadge } from './SampleBadge';
 import { TransitBadge } from './TransitInfo';
+import { VenueArt } from './VenueArt';
 
 export function VenueCard({ venue }: { venue: Venue }) {
   return (
     <article className={`venue-tile${venue.status === 'inactive' ? ' is-inactive' : ''}`}>
       <Link to={`/venue/${encodeURIComponent(venue.id)}`} className="venue-tile-link">
+        <VenueArt category={venue.category} size="md" className="tile-art" />
         <div className="venue-card-top">
           <span className="venue-category">
             {categoryLabel(venue.category)} · {labelOf(ENVIRONMENT_OPTIONS, venue.environment)}
           </span>
           <span className="badge-row">
-            {venue.isSample && <SampleBadge label="Sampel" />}
+            {venue.isSample && <SampleBadge label="Contoh" />}
             {venue.status === 'inactive' && <span className="status-badge">Nonaktif</span>}
             {!venue.isSample && venue.verifiedAt && <span className="verified-badge">Terverifikasi</span>}
           </span>

@@ -1,7 +1,8 @@
 /**
  * Renders the app icons in public/ from inline SVG using Playwright's
  * Chromium. Run with `node scripts/generate-icons.mjs` after changing the
- * design. Not part of the build; the PNGs are committed.
+ * design (set PW_CHROMIUM_PATH to reuse an installed Chromium). Not part of
+ * the build; the PNGs are committed.
  */
 import { writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -9,27 +10,28 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 
-const INK = '#1f1a17';
-const PAPER = '#f6f1ea';
-const ACCENT = '#b4532a';
+const INK = '#96596e'; // dusty rose (deep)
+const PAPER = '#fdf7f5'; // pinkish ivory
+const ACCENT = '#e8bfcb'; // rose
+const BLUSH = '#f5dde3';
 
-/** "D" monogram with an accent dot, drawn in a 512×512 box. */
+/** Soft heart on a blush circle with a small sparkle, in a 512×512 box. */
 const mark = `
-  <path fill-rule="evenodd" fill="${INK}"
-    d="M168 120h108c96 0 156 60 156 136s-60 136-156 136H168z
-       M232 180v152h40c58 0 94-30 94-76s-36-76-94-76z"/>
-  <circle cx="406" cy="388" r="26" fill="${ACCENT}"/>`;
+  <circle cx="276" cy="256" r="170" fill="${BLUSH}"/>
+  <path fill="${INK}" d="M276 384s-118-68-118-152a64 64 0 0 1 118-34 64 64 0 0 1 118 34c0 84-118 152-118 152z"/>
+  <path d="M232 214a30 30 0 0 1 30-30" fill="none" stroke="${PAPER}" stroke-width="16" stroke-linecap="round"/>
+  <path fill="${ACCENT}" d="M420 92c6 26 14 34 40 40-26 6-34 14-40 40-6-26-14-34-40-40 26-6 34-14 40-40z"/>`;
 
 /** Regular icon: rounded tile, mark fills most of it. */
 const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="112" fill="${PAPER}"/>
-  <g transform="translate(-44 0)">${mark}</g>
+  <g transform="translate(-20 0)">${mark}</g>
 </svg>`;
 
 /** Maskable: full-bleed background, mark inside the 80% safe zone. */
 const maskableSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" fill="${PAPER}"/>
-  <g transform="translate(256 256) scale(0.62) translate(-276 -256)">${mark}</g>
+  <g transform="translate(256 256) scale(0.78) translate(-276 -256)">${mark}</g>
 </svg>`;
 
 /** Monochrome-friendly favicon (SVG, used directly by browsers). */
@@ -45,7 +47,7 @@ const targets = [
   { file: 'public/favicon-32x32.png', svg: iconSvg, size: 32 },
 ];
 
-const browser = await chromium.launch();
+const browser = await chromium.launch({ executablePath: process.env.PW_CHROMIUM_PATH || undefined });
 const page = await browser.newPage({ deviceScaleFactor: 1 });
 for (const t of targets) {
   await page.setViewportSize({ width: t.size, height: t.size });

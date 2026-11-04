@@ -21,8 +21,8 @@ export default defineConfig({
         start_url: '/',
         scope: '/',
         display: 'standalone',
-        background_color: '#f6f1ea',
-        theme_color: '#f6f1ea',
+        background_color: '#fdf7f5',
+        theme_color: '#fdf7f5',
         categories: ['lifestyle', 'travel'],
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
@@ -33,7 +33,9 @@ export default defineConfig({
       workbox: {
         // App shell only: everything the app needs is bundled same-origin code and icons.
         // (the web manifest itself is added by the plugin)
-        globPatterns: ['**/*.{js,css,html,svg,png}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Fonts: Indonesian needs Latin only; skip other scripts' subsets.
+        globIgnores: ['**/*cyrillic*', '**/*greek*', '**/*vietnamese*'],
         // Client-side routes (e.g. /rencana/abc) load the cached shell when offline.
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,

@@ -3,19 +3,17 @@ export function PrivacyNote() {
   return (
     <div className="privacy-note">
       <p>
-        <strong>Semua data tersimpan di perangkat ini.</strong> Date Planner tidak punya akun, server, atau backend.
-        Rencana, venue, pengaturan, dan preferensimu disimpan di <em>localStorage</em> peramban ini dan tidak dikirim ke
-        mana pun. Tautan Google Maps baru membuka Google ketika kamu menekannya.
+        <strong>Semua date kesimpan di perangkat ini aja.</strong> Nggak ada akun, server, atau data yang dikirim ke mana-mana.
+        Google Maps baru kebuka kalau kamu tekan tombolnya.
       </p>
-      <p className="eyebrow">Batasan penyimpanan peramban</p>
+      <p className="eyebrow">Yang perlu kamu tahu</p>
       <ul>
-        <li>Data hanya ada di peramban dan perangkat ini — tidak tersinkron ke perangkat atau peramban lain.</li>
-        <li>Menghapus data situs/riwayat peramban, atau memakai mode privat/penyamaran, akan menghapus data ini.</li>
-        <li>Beberapa peramban (misalnya Safari) dapat menghapus data situs yang lama tidak dibuka.</li>
-        <li>Kapasitasnya terbatas (umumnya sekitar 5 MB per situs).</li>
-        <li>Siapa pun yang memakai peramban ini dapat melihat datanya.</li>
+        <li>Datanya cuma ada di browser & HP ini, nggak sinkron ke perangkat lain.</li>
+        <li>Hapus data browser atau mode incognito = datanya ikut hilang.</li>
+        <li>Beberapa browser (misalnya Safari) bisa menghapus data situs yang lama nggak dibuka.</li>
+        <li>Kapasitasnya terbatas (sekitar 5 MB).</li>
       </ul>
-      <p>Ekspor cadangan secara berkala agar datamu aman.</p>
+      <p>Rajin-rajin simpan cadangan ya ♡</p>
     </div>
   );
 }

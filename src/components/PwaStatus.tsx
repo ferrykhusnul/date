@@ -40,7 +40,7 @@ export function PwaStatus() {
     <div className="pwa-toast" role="status" aria-live="polite">
       {needRefresh ? (
         <>
-          <span>Versi baru Date Planner tersedia.</span>
+          <span>Ada versi baru nih ♡</span>
           <span className="pwa-toast-actions">
             <button type="button" className="button button-primary button-sm" onClick={() => updateServiceWorker(true)}>
               Muat ulang
@@ -52,12 +52,12 @@ export function PwaStatus() {
         </>
       ) : offlineReady ? (
         <>
-          <span>Siap dipakai offline. Rencana dan venue tersimpan di perangkat ini.</span>
+          <span>Udah bisa dipakai offline ♡</span>
           <button type="button" className="button button-ghost button-sm" onClick={() => setOfflineReady(false)}>Oke</button>
         </>
       ) : (
         <>
-          <span>Mode offline tidak dapat diaktifkan di peramban ini. Aplikasi tetap berjalan selama online.</span>
+          <span>Mode offline belum bisa di browser ini, tapi aplikasinya tetap jalan.</span>
           <button type="button" className="button button-ghost button-sm" onClick={() => setError(false)}>Tutup</button>
         </>
       )}

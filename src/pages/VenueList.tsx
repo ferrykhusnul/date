@@ -42,12 +42,11 @@ export function VenueList() {
   return (
     <div className="page">
       <PageHeader
-        eyebrow="Dataset"
-        title="Venue"
-        lead="Venue yang dikurasi manual. Perencana hanya memakai venue berstatus aktif di kota yang dipilih."
+        title="Tempat"
+        lead="Tempat-tempat buat ide date. Yang aktif aja yang dipakai."
         actions={
           <Link to="/venue/baru" className="button button-primary">
-            <Icon name="plus" size={18} /> Tambah venue
+            <Icon name="plus" size={18} /> Tambah tempat
           </Link>
         }
       />
@@ -108,7 +107,7 @@ export function VenueList() {
           <label className="switch">
             <input type="checkbox" checked={filter.includeSamples}
               onChange={(e) => set('includeSamples', e.target.checked)} />
-            <span>Tampilkan venue sampel</span>
+            <span>Tampilkan tempat contoh</span>
           </label>
           <button type="button" className="button button-ghost button-sm" disabled={activeFilters === 0}
             onClick={() => setFilter((f) => ({ ...EMPTY_FILTER, includeSamples: f.includeSamples }))}>
@@ -119,21 +118,21 @@ export function VenueList() {
 
       {realVenues.length === 0 && !filter.includeSamples ? (
         <EmptyState
-          title="Dataset venue masih kosong"
-          body="Belum ada venue terverifikasi. Tambahkan venue yang sudah kamu cek di Google Maps, atau lihat venue sampel untuk mencoba aplikasi."
+          title="Belum ada tempat nih ♡"
+          body="Tambahin tempat yang udah kamu cek di Google Maps, atau lihat contoh dulu."
           actions={
             <>
-              <Link to="/venue/baru" className="button button-primary">Tambah venue</Link>
+              <Link to="/venue/baru" className="button button-primary">Tambah tempat</Link>
               <button type="button" className="button button-ghost" onClick={() => set('includeSamples', true)}>
-                Lihat venue sampel
+                Lihat contoh
               </button>
             </>
           }
         />
       ) : results.length === 0 ? (
         <EmptyState
-          title="Tidak ada venue yang cocok"
-          body="Coba longgarkan filter atau ubah status yang ditampilkan."
+          title="Nggak ketemu"
+          body="Coba longgarin filternya."
           actions={
             <button type="button" className="button button-ghost"
               onClick={() => setFilter((f) => ({ ...EMPTY_FILTER, includeSamples: f.includeSamples }))}>

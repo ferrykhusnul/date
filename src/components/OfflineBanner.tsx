@@ -5,8 +5,7 @@ export function OfflineBanner() {
   if (online) return null;
   return (
     <div className="offline-banner" role="status">
-      <strong>Kamu sedang offline.</strong> Rencana tersimpan, venue, perencana, dan perhitungan biaya tetap berfungsi.
-      Tautan Google Maps butuh koneksi internet.
+      <strong>Lagi offline.</strong> Semua tetap jalan, kecuali Google Maps.
     </div>
   );
 }

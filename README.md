@@ -2,7 +2,40 @@
 
 Mobile-first date planning app (React + TypeScript + Vite).
 
-## Status: Phase 7 — quality assurance & deployment readiness
+## Design: "blush" redesign
+
+A soft, romantic, mobile-first UI. Only presentation changed: the planning
+engine, venue data, scoring, transport logic, Maps links, storage format,
+backup format, PWA setup and routes are untouched.
+
+- **Palette** (`src/styles.css` tokens): background `#FDF7F5`, blush
+  `#F5DDE3`, rose `#E8BFCB`, dusty rose `#C68FA2`, mauve `#98717D`, plum text
+  `#44343B`, secondary `#9B8991`, cards `#FFFFFF`, borders `#F0E2E7`. The
+  soft colours are used for surfaces, fills, borders, icons and large text.
+  Small text and buttons use deeper shades of the same family so they keep
+  WCAG AA contrast (≥ 4.5:1): `#7A6670` (secondary text), `#87616E` (accent
+  text), `#96596E` (primary button with white text).
+- **Type:** Nunito (rounded sans) for UI and Cormorant Garamond for
+  headings, self-hosted via Fontsource so they work offline (Latin subsets
+  are precached).
+- **Components:** rounded 18–24 px cards, soft shadows, pill buttons and
+  chips, large choice cards, category placeholder art (`VenueArt`, the
+  dataset has no photos), small hearts/sparkles, subtle transitions
+  (disabled under `prefers-reduced-motion`).
+- **Language:** short, casual Indonesian. Casual labels live in
+  `src/lib/uiLabels.ts` (UI-only; the engine's own labels stay in
+  `src/lib/options.ts` because they appear in generated titles).
+- **"Bikin date" wizard** (`/buat`): six steps — city, date & time, mood,
+  activities, budget, transport (Transum → TransJakarta/MRT/LRT/KRL/any,
+  Motor, Mobil, Mix, Jalan kaki) — with progress, back/continue and
+  per-step validation.
+- **Result:** hero card (title, mood, total, duration, transport), visual
+  stop cards with "Buka Maps", "Rute" and "Opsi lainnya" (swap in place),
+  "Atur lagi", "Coba ide lain" (re-runs the generator without the venues
+  already shown) and "Simpan date".
+- The dark theme was removed so the blush identity is consistent.
+
+## Phase 7 — quality assurance & deployment readiness
 
 Audited and tested end to end (see "Test suites" below); deployable as a
 static site on Vercel (see "Deployment"). Phase 7 fixes: colour contrast

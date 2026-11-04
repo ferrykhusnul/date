@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
 import { Icon } from '../components/Icon';
 import { MapsLinks } from '../components/MapsLinks';
+import { VenueArt } from '../components/VenueArt';
 import { TransitAccessList } from '../components/TransitInfo';
 import { PageHeader } from '../components/PageHeader';
 import { PriceEstimate } from '../components/PriceEstimate';
@@ -26,11 +27,11 @@ export function VenueDetail() {
   if (!venue) {
     return (
       <div className="page page-narrow">
-        <PageHeader title="Venue tidak ditemukan" back />
+        <PageHeader title="Tempat nggak ketemu" back />
         <EmptyState
-          title="Venue ini tidak tersedia"
+          title="Tempat ini udah nggak ada"
           body="Tautan mungkin salah, atau venue sudah dihapus dari dataset."
-          actions={<Link to="/venue" className="button button-primary">Lihat semua venue</Link>}
+          actions={<Link to="/venue" className="button button-primary">Lihat semua tempat</Link>}
         />
       </div>
     );
@@ -52,6 +53,8 @@ export function VenueDetail() {
     <div className="page page-narrow">
       <PageHeader back eyebrow={categoryLabel(venue.category)} title={venue.name} />
 
+      <VenueArt category={venue.category} size="lg" />
+
       <div className="badge-row">
         {venue.isSample && <SampleBadge />}
         <span className={venue.status === 'active' ? 'verified-badge' : 'status-badge'}>
@@ -69,12 +72,12 @@ export function VenueDetail() {
       {venue.description && <p className="page-lead">{venue.description}</p>}
 
       <section className="section">
-        <h2 className="section-title">Buka di Google Maps</h2>
+        <h2 className="section-title">Google Maps</h2>
         <MapsLinks venue={venue} />
       </section>
 
       <section className="section">
-        <h2 className="section-title">Akses transportasi umum</h2>
+        <h2 className="section-title">Akses transum</h2>
         <TransitAccessList venue={venue} />
       </section>
 

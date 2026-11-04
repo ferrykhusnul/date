@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
 import { PageHeader } from '../components/PageHeader';
 import { PlanCard } from '../components/PlanCard';
@@ -7,8 +7,13 @@ import { todayISO } from '../lib/format';
 import { EMPTY_PLAN_FILTER, filterPlans, planCities, type PlanFilter } from '../lib/planFilters';
 import { planDisplayName, useAppState } from '../state/AppState';
 
+const TIME_TABS: { value: PlanFilter['time']; label: string }[] = [
+  { value: 'all', label: 'Semua' },
+  { value: 'upcoming', label: 'Akan datang' },
+  { value: 'past', label: 'Udah lewat' },
+];
+
 export function SavedDates() {
-  const navigate = useNavigate();
   const { savedPlans, deletePlan, duplicatePlan, loadSamplePlans } = useAppState();
   const [filter, setFilter] = useState<PlanFilter>(EMPTY_PLAN_FILTER);
   const [status, setStatus] = useState('');
@@ -20,7 +25,7 @@ export function SavedDates() {
 
   const onDelete = (id: string) => {
     const plan = savedPlans.find((p) => p.id === id);
-    if (plan && window.confirm(`Hapus rencana "${planDisplayName(plan)}"? Tindakan ini tidak dapat dibatalkan.`)) {
+    if (plan && window.confirm(`Hapus "${planDisplayName(plan)}"? Nggak bisa dibalikin lho.`)) {
       deletePlan(id);
       setStatus(`"${planDisplayName(plan)}" dihapus.`);
     }
@@ -28,26 +33,22 @@ export function SavedDates() {
 
   const onDuplicate = (id: string) => {
     const copy = duplicatePlan(id);
-    if (copy) setStatus(`Salinan dibuat: "${planDisplayName(copy)}".`);
+    if (copy) setStatus(`Salinan dibuat ♡`);
   };
 
   return (
     <div className="page">
-      <PageHeader
-        eyebrow="Koleksi"
-        title="Rencana tersimpan"
-        lead={savedPlans.length ? `${savedPlans.length} rencana, tersimpan di perangkat ini.` : undefined}
-      />
+      <PageHeader title="Date tersimpan" lead={savedPlans.length ? `${savedPlans.length} date di perangkat ini` : undefined} />
 
       {savedPlans.length === 0 ? (
         <EmptyState
-          title="Belum ada yang disimpan"
-          body="Simpan rencana dari halaman hasil agar mudah dibuka kembali. Rencana tersimpan di perangkat ini dan tetap ada setelah halaman dimuat ulang."
+          title="Belum ada date nih ♡"
+          body="Simpan date dari halaman hasil biar gampang dibuka lagi."
           actions={
             <>
-              <Link to="/buat" className="button button-primary">Buat rencana</Link>
-              <button type="button" className="button button-ghost" onClick={loadSamplePlans}>Muat contoh rencana</button>
-              <button type="button" className="button button-ghost" onClick={() => navigate('/cadangan')}>Pulihkan dari cadangan</button>
+              <Link to="/buat" className="button button-primary">Bikin date pertama</Link>
+              <button type="button" className="button button-ghost" onClick={loadSamplePlans}>Lihat contoh</button>
+              <Link to="/cadangan" className="button button-ghost">Pulihkan cadangan</Link>
             </>
           }
         />
@@ -55,51 +56,50 @@ export function SavedDates() {
         <>
           <div className="plan-filters" role="search">
             <div className="field plan-filter-search">
-              <label className="field-label" htmlFor="pf-q">Cari</label>
-              <input id="pf-q" className="input" type="search" placeholder="Nama rencana, kota, venue, catatan…"
+              <label className="sr-only" htmlFor="pf-q">Cari date</label>
+              <input id="pf-q" className="input input-pill" type="search" placeholder="Cari date…"
                 value={filter.query} onChange={(e) => set('query', e.target.value)} />
             </div>
-            <div className="field">
-              <label className="field-label" htmlFor="pf-city">Kota</label>
-              <select id="pf-city" className="input select" value={filter.city} onChange={(e) => set('city', e.target.value)}>
-                <option value="">Semua kota</option>
-                {cities.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+            <div className="segmented" role="radiogroup" aria-label="Waktu">
+              {TIME_TABS.map((t) => (
+                <label key={t.value} className={`segment${filter.time === t.value ? ' is-active' : ''}`}>
+                  <input type="radio" name="pf-time" checked={filter.time === t.value} onChange={() => set('time', t.value)} />
+                  {t.label}
+                </label>
+              ))}
             </div>
-            <div className="field">
-              <label className="field-label" htmlFor="pf-time">Waktu</label>
-              <select id="pf-time" className="input select" value={filter.time} onChange={(e) => set('time', e.target.value as PlanFilter['time'])}>
-                <option value="all">Semua</option>
-                <option value="upcoming">Akan datang</option>
-                <option value="past">Sudah lewat</option>
-              </select>
-            </div>
-            <div className="field">
-              <label className="field-label" htmlFor="pf-sort">Urutkan</label>
-              <select id="pf-sort" className="input select" value={filter.sort} onChange={(e) => set('sort', e.target.value as PlanFilter['sort'])}>
-                <option value="created-desc">Dibuat terbaru</option>
-                <option value="created-asc">Dibuat terlama</option>
-                <option value="date-asc">Tanggal kencan terdekat</option>
-                <option value="date-desc">Tanggal kencan terjauh</option>
+            <div className="filter-row">
+              {cities.length > 1 && (
+                <select aria-label="Kota" className="input select input-sm" value={filter.city} onChange={(e) => set('city', e.target.value)}>
+                  <option value="">Semua kota</option>
+                  {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
+              <select id="pf-sort" aria-label="Urutkan" className="input select input-sm" value={filter.sort}
+                onChange={(e) => set('sort', e.target.value as PlanFilter['sort'])}>
+                <option value="created-desc">Terbaru dibuat</option>
+                <option value="created-asc">Terlama dibuat</option>
+                <option value="date-asc">Tanggal terdekat</option>
+                <option value="date-desc">Tanggal terjauh</option>
                 <option value="name">Nama A–Z</option>
               </select>
             </div>
           </div>
 
           <p className="status" role="status" aria-live="polite">
-            {status || (filtered ? `${results.length} dari ${savedPlans.length} rencana cocok.` : '')}
+            {status || (filtered ? `${results.length} dari ${savedPlans.length} date` : '')}
           </p>
 
           {results.length === 0 ? (
             <EmptyState
-              title="Tidak ada rencana yang cocok"
-              body="Coba kata kunci lain atau longgarkan filter."
+              title="Nggak ketemu"
+              body="Coba kata lain atau ganti filternya."
               actions={<button type="button" className="button button-ghost" onClick={() => setFilter(EMPTY_PLAN_FILTER)}>Reset filter</button>}
             />
           ) : (
             <div className="saved-grid">
               {results.map((p) => (
-                <PlanCard key={p.id} plan={p} variant="preview" headingLevel={2} onDelete={onDelete} onDuplicate={onDuplicate} />
+                <PlanCard key={p.id} plan={p} variant="preview" headingLevel={2} showCreated onDelete={onDelete} onDuplicate={onDuplicate} />
               ))}
             </div>
           )}

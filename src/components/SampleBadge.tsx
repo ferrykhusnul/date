@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-export function SampleBadge({ label = 'Data sampel' }: { label?: string }) {
+export function SampleBadge({ label = 'Contoh' }: { label?: string }) {
   return (
     <span className="sample-badge" title="Data ini hanya contoh dan bukan informasi venue nyata">
       {label}

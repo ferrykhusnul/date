@@ -7,10 +7,10 @@ import { StorageBanner } from './StorageBanner';
 
 const NAV_ITEMS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/', label: 'Beranda', icon: 'home', end: true },
-  { to: '/buat', label: 'Buat', icon: 'plus' },
+  { to: '/buat', label: 'Bikin', icon: 'heart' },
   { to: '/tersimpan', label: 'Tersimpan', icon: 'bookmark' },
-  { to: '/venue', label: 'Venue', icon: 'store' },
-  { to: '/pengaturan', label: 'Pengaturan', icon: 'settings' },
+  { to: '/venue', label: 'Tempat', icon: 'store' },
+  { to: '/pengaturan', label: 'Setelan', icon: 'settings' },
 ];
 
 export function Layout() {
@@ -27,7 +27,7 @@ export function Layout() {
     <div className="app-shell">
       <aside className="sidebar" aria-label="Navigasi utama">
         <div className="brand">
-          <span className="brand-mark">D</span>
+          <span className="brand-mark" aria-hidden="true"><Icon name="heart" size={18} /></span>
           <span className="brand-name">Date Planner</span>
         </div>
         <nav className="sidebar-nav">
@@ -38,7 +38,7 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
-        <p className="sidebar-note">Data tersimpan di perangkat ini saja. Harga venue selalu berupa perkiraan.</p>
+        <p className="sidebar-note">Semua date kesimpan di perangkat ini ♡</p>
       </aside>
 
       <main className="main" id="konten">

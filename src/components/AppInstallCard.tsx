@@ -38,11 +38,11 @@ export function AppInstallCard() {
     <section className="section storage-card" id="aplikasi">
       <h2 className="section-title"><Icon name="download" size={20} /> Aplikasi &amp; offline</h2>
       <dl className="detail-list compact">
-        <div><dt>Status pemasangan</dt><dd>{installed ? 'Terpasang sebagai aplikasi' : 'Dibuka di peramban'}</dd></div>
+        <div><dt>Aplikasi</dt><dd>{installed ? 'Udah terpasang ♡' : 'Dibuka di browser'}</dd></div>
         <div>
           <dt>Mode offline</dt>
           <dd>
-            {{ active: 'Aktif — siap dipakai offline', installing: 'Sedang disiapkan…', none: 'Belum aktif (muat ulang sekali saat online)', unsupported: 'Tidak didukung peramban ini' }[sw]}
+            {{ active: 'Siap offline', installing: 'Lagi disiapin…', none: 'Belum aktif (buka sekali pas online)', unsupported: 'Nggak didukung browser ini' }[sw]}
           </dd>
         </div>
         <div><dt>Koneksi</dt><dd>{online ? 'Online' : 'Offline'}</dd></div>
@@ -63,7 +63,7 @@ export function AppInstallCard() {
       <p className="status" role="status" aria-live="polite">{status}</p>
 
       <div className="privacy-note">
-        <p className="eyebrow">Yang tetap berfungsi tanpa internet</p>
+        <p className="eyebrow">Tetap jalan tanpa internet</p>
         <ul>
           <li>Membuka aplikasi dan semua halamannya</li>
           <li>Rencana tersimpan, draf, dan pengaturan</li>

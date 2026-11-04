@@ -12,14 +12,14 @@ export function MapsLinks({ venue, compact = false }: { venue: Venue; compact?: 
       <div className="maps-links">
         <div className="maps-buttons">
           <button type="button" className={cls} disabled>
-            <Icon name="map" size={18} /> Cari di Maps
+            <Icon name="map" size={18} /> Buka Maps
           </button>
           <button type="button" className={cls} disabled>
-            <Icon name="navigation" size={18} /> Petunjuk arah
+            <Icon name="navigation" size={18} /> Rute
           </button>
         </div>
         {(
-          <p className="field-hint">Venue sampel tidak memiliki lokasi nyata, jadi tautan peta dinonaktifkan.</p>
+          <p className="field-hint">Tempat contoh nggak punya lokasi asli, jadi Maps-nya mati.</p>
         )}
       </div>
     );
@@ -29,11 +29,11 @@ export function MapsLinks({ venue, compact = false }: { venue: Venue; compact?: 
   return (
     <div className="maps-links">
       <div className="maps-buttons">
-        <ExternalLink href={buildSearchUrl(venue)} className={cls} label={`Cari di Maps: ${venue.name}`}>
-          <Icon name="map" size={18} /> Cari di Maps
+        <ExternalLink href={buildSearchUrl(venue)} className={cls} label={`Buka Maps: ${venue.name}`}>
+          <Icon name="map" size={18} /> Buka Maps
         </ExternalLink>
-        <ExternalLink href={buildDirectionsUrl(venue)} className={cls} label={`Petunjuk arah: ${venue.name}`}>
-          <Icon name="navigation" size={18} /> Petunjuk arah
+        <ExternalLink href={buildDirectionsUrl(venue)} className={cls} label={`Rute: ${venue.name}`}>
+          <Icon name="navigation" size={18} /> Rute
         </ExternalLink>
         {!compact &&
           (listing ? (
@@ -49,8 +49,8 @@ export function MapsLinks({ venue, compact = false }: { venue: Venue; compact?: 
       {!compact && (
         <p className="field-hint">
           {listing
-            ? 'Ulasan hanya dapat dibaca langsung di listing Google Maps venue. Aplikasi ini tidak menampilkan rating atau ulasan.'
-            : 'Tautan listing Google Maps belum diisi atau tidak valid. Ubah venue untuk menambahkannya.'}
+            ? 'Ulasan bisa dibaca langsung di Google Maps.'
+            : 'Link Google Maps belum diisi. Atur tempat ini buat nambahin.'}
         </p>
       )}
     </div>

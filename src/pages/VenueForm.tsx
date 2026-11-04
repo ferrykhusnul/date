@@ -178,9 +178,9 @@ export function VenueForm() {
     <div className="page page-narrow">
       <PageHeader
         back
-        eyebrow={existing ? 'Ubah venue' : 'Venue baru'}
-        title={existing ? existing.name : 'Tambah venue'}
-        lead="Isi hanya informasi yang sudah kamu cek sendiri. Harga diisi sebagai perkiraan per orang."
+        eyebrow={existing ? 'Atur tempat' : 'Tempat baru'}
+        title={existing ? existing.name : 'Tambah tempat'}
+        lead="Isi yang udah kamu cek aja ya. Harga = kira-kira per orang."
       />
 
       <form className="form" onSubmit={onSubmit} noValidate>
@@ -349,7 +349,7 @@ export function VenueForm() {
 
         <div className="form-actions sticky-actions">
           <button type="submit" className="button button-primary button-lg button-block">
-            {existing ? 'Simpan perubahan' : 'Simpan venue'}
+            {existing ? 'Simpan perubahan' : 'Simpan tempat'}
           </button>
         </div>
       </form>

@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
 import { computeBudget } from '../engine/budget';
-import { planEndTime } from '../engine/itinerary';
-import { formatDateShort, formatIDR } from '../lib/format';
+import { formatDateShort } from '../lib/format';
+import { moodOf, shortIDR } from '../lib/uiLabels';
 import { planDisplayName } from '../state/AppState';
 import { useVenues } from '../state/VenueStore';
 import type { DatePlan } from '../types';
 import { Icon } from './Icon';
 import { SampleBadge } from './SampleBadge';
+import { VenueArt } from './VenueArt';
 
 export function formatDateTimeShort(iso: string): string {
   const d = new Date(iso);
@@ -14,79 +15,68 @@ export function formatDateTimeShort(iso: string): string {
   return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+/** Visual date card: picture, date, title, mood. Details live on the date page. */
 export function PlanCard({
   plan,
   variant = 'compact',
   onDelete,
   onDuplicate,
   headingLevel = 3,
+  showCreated = false,
 }: {
-  /** 2 when the card sits directly under the page heading. */
-  headingLevel?: 2 | 3;
   plan: DatePlan;
+  /** 'preview' = larger card, 'compact' = carousel card. */
   variant?: 'compact' | 'preview';
   onDelete?: (id: string) => void;
   onDuplicate?: (id: string) => void;
+  /** 2 when the card sits directly under the page heading. */
+  headingLevel?: 2 | 3;
+  showCreated?: boolean;
 }) {
   const { getVenue } = useVenues();
   const budget = computeBudget(plan);
   const name = planDisplayName(plan);
-  const hasActions = Boolean(onDelete || onDuplicate);
+  const mood = moodOf(plan.input.vibe);
+  const first = plan.items.find((i) => i.venueId);
+  const category = first?.venueId ? getVenue(first.venueId)?.category : undefined;
+  const Title = headingLevel === 2 ? 'h2' : 'h3';
 
   return (
     <article className={`plan-card plan-card--${variant}`}>
       <Link to={`/rencana/${encodeURIComponent(plan.id)}`} className="plan-card-link">
-        <div className="plan-card-meta">
-          <span>{formatDateShort(plan.input.date)}</span>
-          <span aria-hidden="true">·</span>
-          <span>
-            {plan.input.startTime}–{planEndTime(plan)}
-          </span>
-          {plan.usesSampleVenues && <SampleBadge label="Venue sampel" />}
+        <div className="plan-card-art">
+          <VenueArt category={category} size={variant === 'preview' ? 'lg' : 'md'} />
+          <span className="date-chip">{formatDateShort(plan.input.date)}</span>
         </div>
-        {headingLevel === 2 ? <h2 className="plan-card-title">{name}</h2> : <h3 className="plan-card-title">{name}</h3>}
-        {plan.name && plan.name !== plan.title && <p className="muted small">{plan.title}</p>}
-        {variant === 'preview' && (
-          <ol className="plan-card-stops">
-            {plan.items.map((s) => (
-              <li key={s.id}>
-                <span className="stop-time">{s.startTime}</span>
-                <span>{(s.venueId && getVenue(s.venueId)?.name) || s.title}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-        <div className="plan-card-foot">
-          <span>
-            {plan.items.length} aktivitas · {plan.input.city}
-          </span>
-          <span className={budget.status === 'over' ? 'text-warn' : undefined}>
-            ± {formatIDR(budget.totalEstimate)}
-            {!budget.complete && '*'}
-          </span>
+        <div className="plan-card-body">
+          <Title className="plan-card-title">{name}</Title>
+          <div className="pill-row">
+            <span className="pill pill-mood"><Icon name={mood.icon} size={13} /> {mood.label}</span>
+            <span className="pill">{plan.items.length} tempat</span>
+            <span className={`pill${budget.status === 'over' ? ' pill-warn' : ''}`}>± {shortIDR(budget.totalEstimate)}</span>
+            {plan.usesSampleVenues && <SampleBadge label="Contoh" />}
+          </div>
+          {showCreated && (
+            <p className="plan-card-dates">
+              Dibuat {formatDateTimeShort(plan.createdAt)}
+              {plan.editedAt && ` · diubah ${formatDateTimeShort(plan.editedAt)}`}
+            </p>
+          )}
         </div>
-        <p className="plan-card-dates">
-          Dibuat {formatDateTimeShort(plan.createdAt)}
-          {plan.editedAt && ` · diubah ${formatDateTimeShort(plan.editedAt)}`}
-        </p>
       </Link>
-      {hasActions ? (
+      {(onDelete || onDuplicate) && (
         <div className="plan-card-actions">
           {onDuplicate && (
-            <button type="button" className="icon-button" aria-label={`Duplikat ${name}`} title="Duplikat" onClick={() => onDuplicate(plan.id)}>
+            <button type="button" className="icon-button soft" aria-label={`Duplikat ${name}`} title="Duplikat" onClick={() => onDuplicate(plan.id)}>
               <Icon name="copy" size={18} />
             </button>
           )}
           {onDelete && (
-            <button type="button" className="icon-button" aria-label={`Hapus ${name}`} title="Hapus" onClick={() => onDelete(plan.id)}>
+            <button type="button" className="icon-button soft" aria-label={`Hapus ${name}`} title="Hapus" onClick={() => onDelete(plan.id)}>
               <Icon name="trash" size={18} />
             </button>
           )}
         </div>
-      ) : (
-        <span className="plan-card-arrow" aria-hidden="true">
-          <Icon name="arrow-right" size={18} />
-        </span>
       )}
     </article>
   );

@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { expect, seedVenues, test } from './fixtures';
+import { createDate, expect, seedVenues, test } from './fixtures';
 
 test.describe('PWA', () => {
   test('manifest, icons, service worker and precache', async ({ page, baseURL, consoleErrors }) => {
@@ -22,7 +22,7 @@ test.describe('PWA', () => {
       return { contentType: res.headers.get('content-type'), json, icons };
     });
     expect(manifest.contentType).toContain('application/manifest+json');
-    expect(manifest.json).toMatchObject({ name: 'Date Planner', short_name: 'Date Planner', display: 'standalone', start_url: '/', scope: '/', theme_color: '#f6f1ea' });
+    expect(manifest.json).toMatchObject({ name: 'Date Planner', short_name: 'Date Planner', display: 'standalone', start_url: '/', scope: '/', theme_color: '#fdf7f5', background_color: '#fdf7f5' });
     for (const icon of manifest.icons) {
       expect(icon.status).toBe(200);
       expect(icon.actual).toBe(icon.sizes);
@@ -81,10 +81,8 @@ test.describe('PWA', () => {
     expect(await page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
 
     // Save a plan while online.
-    await page.goto('/buat');
-    await page.getByLabel('Kota').fill('Kota Uji');
-    await page.getByRole('button', { name: 'Susun rencana' }).click();
-    await page.getByRole('button', { name: 'Simpan rencana' }).click();
+    await createDate(page);
+    await page.getByRole('button', { name: 'Simpan date' }).click();
     await expect(page).toHaveURL(/\/rencana\//);
     const planPath = new URL(page.url()).pathname;
 
@@ -112,15 +110,13 @@ test.describe('PWA', () => {
     await expect(page.locator('.venue-card a.is-offline').first()).toHaveAttribute('title', 'Butuh koneksi internet');
 
     // Generator offline.
-    await page.goto('/buat');
-    await page.getByLabel('Kota').fill('Kota Uji');
-    await page.getByRole('button', { name: 'Susun rencana' }).click();
+    await createDate(page, { mood: 'Chill' });
     await expect(page.locator('.timeline-item').first()).toBeVisible();
-    await page.getByLabel('Mode ubah').check();
+    await page.getByRole('checkbox', { name: 'Atur lagi' }).check();
     const before = await page.locator('.cost-total strong').textContent();
-    await page.locator('.timeline-item').first().getByLabel('Perkiraan biaya berdua').fill('123000');
+    await page.locator('.timeline-item').first().getByLabel('Kira-kira biaya berdua').fill('123000');
     await expect(page.locator('.cost-total strong')).not.toHaveText(before!);
-    await page.getByRole('button', { name: 'Simpan rencana' }).click();
+    await page.getByRole('button', { name: 'Simpan date' }).click();
     await page.goto('/tersimpan');
     await expect(page.locator('.plan-card')).toHaveCount(2);
     await context.setOffline(false);

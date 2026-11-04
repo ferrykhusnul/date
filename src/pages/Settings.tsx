@@ -7,15 +7,9 @@ import { Icon } from '../components/Icon';
 import { PageHeader } from '../components/PageHeader';
 import { PrivacyNote } from '../components/PrivacyNote';
 import { CURATED_VENUES } from '../data/venues';
-import {
-  ACTIVITY_OPTIONS,
-  CITY_SUGGESTIONS,
-  DURATION_OPTIONS,
-  ENVIRONMENT_OPTIONS,
-  TRANSPORT_OPTIONS,
-  VIBE_OPTIONS,
-} from '../lib/options';
+import { CITY_SUGGESTIONS, DURATION_OPTIONS, TRANSPORT_OPTIONS } from '../lib/options';
 import { downloadJson } from '../storage/backup';
+import { ACTIVITIES_UI, ENVIRONMENTS_UI, MOODS } from '../lib/uiLabels';
 import { DEFAULT_PREFERENCES, DEFAULT_SETTINGS } from '../storage/defaults';
 import { quarantinedKeys, readRaw, removeKey, storageAvailable, usageBytes } from '../storage/storage';
 import { useAppState } from '../state/AppState';
@@ -63,14 +57,14 @@ export function Settings() {
     e.preventDefault();
     if (!valid) return;
     updateSettings({ ...values, defaultCity: values.defaultCity.trim() });
-    setStatus(persistenceAvailable ? 'Pengaturan disimpan di perangkat ini.' : 'Pengaturan dipakai sampai halaman ditutup (penyimpanan tidak tersedia).');
+    setStatus(persistenceAvailable ? 'Kesimpan ♡' : 'Kepakai sampai halaman ditutup (penyimpanan nggak tersedia).');
   };
 
   const onPrefsSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!prefsValid) return;
     updatePreferences(prefs);
-    setPrefStatus('Preferensi disimpan. Formulir rencana baru akan memakai nilai ini.');
+    setPrefStatus('Kesimpan ♡');
   };
 
   const onRequestPersist = async () => {
@@ -114,26 +108,26 @@ export function Settings() {
 
   return (
     <div className="page page-narrow">
-      <PageHeader eyebrow="Preferensi" title="Pengaturan" lead="Nilai bawaan untuk rencana baru, serta data di perangkat ini." />
+      <PageHeader title="Setelan" lead="Biar bikin date makin cepet." />
 
       <form className="form" onSubmit={onSubmit} noValidate>
         <section className="form-section">
-          <h2 className="form-section-title"><span className="step">01</span> Pengaturan umum</h2>
+          <h2 className="form-section-title"><span className="step">01</span> Default date</h2>
           <div className="field">
-            <label className="field-label" htmlFor="s-city">Kota bawaan</label>
+            <label className="field-label" htmlFor="s-city">Kota</label>
             <input id="s-city" className="input" list="settings-city-suggestions" value={values.defaultCity}
               onChange={(e) => { setValues({ ...values, defaultCity: e.target.value }); setStatus(''); }} />
             <datalist id="settings-city-suggestions">{CITY_SUGGESTIONS.map((c) => <option key={c} value={c} />)}</datalist>
             {!values.defaultCity.trim() && <p className="field-error">Kota wajib diisi.</p>}
           </div>
           <div className="field">
-            <label className="field-label" htmlFor="s-budget">Anggaran bawaan (untuk berdua)</label>
+            <label className="field-label" htmlFor="s-budget">Budget (berdua)</label>
             <CurrencyInput id="s-budget" value={values.defaultBudget} invalid={values.defaultBudget < 50_000}
               onChange={(v) => { setValues({ ...values, defaultBudget: v }); setStatus(''); }} />
             {values.defaultBudget < 50_000 && <p className="field-error">Anggaran minimal Rp 50.000.</p>}
           </div>
           <div className="field">
-            <label className="field-label" htmlFor="s-transport">Transportasi bawaan</label>
+            <label className="field-label" htmlFor="s-transport">Transport</label>
             <select id="s-transport" className="input select" value={values.defaultTransportation}
               onChange={(e) => { setValues({ ...values, defaultTransportation: e.target.value as Transportation }); setStatus(''); }}>
               {TRANSPORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -143,13 +137,13 @@ export function Settings() {
             <input type="checkbox" checked={values.useSampleVenues}
               onChange={(e) => { setValues({ ...values, useSampleVenues: e.target.checked }); setStatus(''); }} />
             <span>
-              Pakai venue sampel bila belum ada venue di kota tujuan
-              <span className="field-hint block">Rencana dari venue sampel selalu diberi label "Venue sampel".</span>
+              Pakai tempat contoh kalau di kota itu belum ada tempat
+              <span className="field-hint block">Selalu ditandai "Contoh".</span>
             </span>
           </label>
           <div className="form-actions inline">
-            <button type="submit" className="button button-primary" disabled={!dirty || !valid}>Simpan pengaturan</button>
-            <button type="button" className="button button-ghost" onClick={() => { setValues(DEFAULT_SETTINGS); setStatus(''); }}>Kembalikan bawaan</button>
+            <button type="submit" className="button button-primary" disabled={!dirty || !valid}>Simpan</button>
+            <button type="button" className="button button-ghost" onClick={() => { setValues(DEFAULT_SETTINGS); setStatus(''); }}>Reset</button>
           </div>
           <p className="status" role="status" aria-live="polite">{status}</p>
         </section>
@@ -157,14 +151,14 @@ export function Settings() {
 
       <form className="form" onSubmit={onPrefsSubmit} noValidate>
         <section className="form-section">
-          <h2 className="form-section-title"><span className="step">02</span> Preferensi rencana</h2>
-          <p className="field-hint">Isian awal formulir "Buat Kencan".</p>
-          <ChipGroup name="p-vibe" legend="Vibe" options={VIBE_OPTIONS} value={prefs.vibe}
+          <h2 className="form-section-title"><span className="step">02</span> Jawaban favorit</h2>
+          <p className="field-hint">Langsung kepilih tiap bikin date.</p>
+          <ChipGroup name="p-vibe" legend="Vibes" options={MOODS.map(({ value, label }) => ({ value, label }))} value={prefs.vibe}
             onChange={(v) => { setPrefs({ ...prefs, vibe: v }); setPrefStatus(''); }} />
-          <MultiChipGroup<Activity> name="p-act" legend="Aktivitas" options={ACTIVITY_OPTIONS} value={prefs.activities}
+          <MultiChipGroup<Activity> name="p-act" legend="Mau ngapain" options={ACTIVITIES_UI.map(({ value, label }) => ({ value, label }))} value={prefs.activities}
             error={prefs.activities.length ? undefined : 'Pilih minimal satu aktivitas.'}
             onChange={(v) => { setPrefs({ ...prefs, activities: v }); setPrefStatus(''); }} />
-          <ChipGroup name="p-env" legend="Lingkungan" options={ENVIRONMENT_OPTIONS} value={prefs.environment}
+          <ChipGroup name="p-env" legend="Tempatnya" options={ENVIRONMENTS_UI.map(({ value, label }) => ({ value, label }))} value={prefs.environment}
             onChange={(v) => { setPrefs({ ...prefs, environment: v }); setPrefStatus(''); }} />
           <ChipGroup name="p-dur" legend="Durasi" options={DURATION_OPTIONS} value={prefs.durationHours}
             onChange={(v) => { setPrefs({ ...prefs, durationHours: v }); setPrefStatus(''); }} />
@@ -174,8 +168,8 @@ export function Settings() {
               onChange={(e) => { setPrefs({ ...prefs, startTime: e.target.value }); setPrefStatus(''); }} />
           </div>
           <div className="form-actions inline">
-            <button type="submit" className="button button-primary" disabled={!prefsDirty || !prefsValid}>Simpan preferensi</button>
-            <button type="button" className="button button-ghost" onClick={() => { setPrefs(DEFAULT_PREFERENCES); setPrefStatus(''); }}>Kembalikan bawaan</button>
+            <button type="submit" className="button button-primary" disabled={!prefsDirty || !prefsValid}>Simpan</button>
+            <button type="button" className="button button-ghost" onClick={() => { setPrefs(DEFAULT_PREFERENCES); setPrefStatus(''); }}>Reset</button>
           </div>
           <p className="status" role="status" aria-live="polite">{prefStatus}</p>
         </section>
@@ -189,9 +183,9 @@ export function Settings() {
 
         <dl className="detail-list compact">
           <div><dt>Lokasi data</dt><dd>{storageAvailable() ? 'localStorage peramban ini' : 'Memori saja (penyimpanan tidak tersedia)'}</dd></div>
-          <div><dt>Rencana tersimpan</dt><dd>{savedPlans.length} rencana</dd></div>
-          <div><dt>Venue lokal</dt><dd>{localVenues.length} venue</dd></div>
-          <div><dt>Venue terkurasi (bawaan)</dt><dd>{CURATED_VENUES.length} venue</dd></div>
+          <div><dt>Date tersimpan</dt><dd>{savedPlans.length} date</dd></div>
+          <div><dt>Tempat kamu</dt><dd>{localVenues.length} tempat</dd></div>
+          <div><dt>Tempat bawaan</dt><dd>{CURATED_VENUES.length} tempat</dd></div>
           <div><dt>Ruang terpakai</dt><dd>± {formatBytes(usage)}</dd></div>
           <div>
             <dt>Penyimpanan persisten</dt>
@@ -200,11 +194,11 @@ export function Settings() {
         </dl>
 
         <div className="form-actions inline">
-          <Link to="/cadangan" className="button button-primary"><Icon name="download" size={18} /> Cadangan &amp; impor</Link>
+          <Link to="/cadangan" className="button button-primary"><Icon name="download" size={18} /> Cadangan</Link>
           {persistState === 'not-granted' && (
             <button type="button" className="button button-ghost" onClick={onRequestPersist}>Minta penyimpanan persisten</button>
           )}
-          <button type="button" className="button button-ghost" onClick={onExportVenues} disabled={realVenues.length === 0}>Ekspor venue (JSON)</button>
+          <button type="button" className="button button-ghost" onClick={onExportVenues} disabled={realVenues.length === 0}>Ekspor tempat (JSON)</button>
         </div>
         <p className="field-hint">
           "Ekspor venue" menghasilkan daftar venue saja, untuk disalin ke dataset terkurasi (<code>src/data/venues.ts</code>).
@@ -232,8 +226,8 @@ export function Settings() {
         <div className="danger-zone">
           <p className="eyebrow">Hapus data</p>
           <div className="form-actions inline">
-            <button type="button" className="button button-danger-ghost" onClick={onClearPlans} disabled={savedPlans.length === 0}>Hapus semua rencana</button>
-            <button type="button" className="button button-danger-ghost" onClick={onClearVenues} disabled={localVenues.length === 0}>Hapus venue lokal</button>
+            <button type="button" className="button button-danger-ghost" onClick={onClearPlans} disabled={savedPlans.length === 0}>Hapus semua date</button>
+            <button type="button" className="button button-danger-ghost" onClick={onClearVenues} disabled={localVenues.length === 0}>Hapus tempat kamu</button>
           </div>
         </div>
         <p className="status" role="status" aria-live="polite">{dataStatus}</p>

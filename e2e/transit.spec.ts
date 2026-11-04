@@ -1,16 +1,9 @@
-import { expect, seedVenues, test } from './fixtures';
+import { createDate, expect, seedVenues, test } from './fixtures';
 
 test('public-transport plan: transit ranking, station info and route links', async ({ page, consoleErrors }) => {
   void consoleErrors;
   await seedVenues(page);
-  await page.goto('/buat');
-  await page.getByLabel('Kota').fill('Kota Uji');
-  await page.getByLabel('Jam mulai').fill('15:00');
-  await page.locator('label.chip', { hasText: '3 jam' }).click();
-  await page.locator('label.chip', { hasText: 'MRT Jakarta' }).click();
-  await page.getByLabel(/Titik berangkat/).fill('Stasiun Uji Awal');
-  await page.getByLabel(/Tujuan akhir/).fill('Rumah Uji');
-  await page.getByRole('button', { name: 'Susun rencana' }).click();
+  await createDate(page, { time: '15:00', hours: 3, transport: 'Transum', transit: 'MRT', start: 'Stasiun Uji Awal', end: 'Rumah Uji' });
 
   // The café with verified MRT access ranks first.
   await expect(page.locator('.timeline-item .venue-card-name').first()).toHaveText('Kafe Uji');
@@ -33,5 +26,5 @@ test('public-transport plan: transit ranking, station info and route links', asy
   expect(routes[2].d).toBe('Rumah Uji');
   // Fares are not estimated; buffers are labelled as such.
   await expect(page.locator('.transition-row').nth(1)).toContainText('bukan estimasi rute');
-  await expect(page.getByText('Tarif transportasi umum tidak dihitung').first()).toBeVisible();
+  await expect(page.locator('.budget-details')).toContainText('Tarif transum nggak dihitung');
 });

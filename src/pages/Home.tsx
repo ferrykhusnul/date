@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
 import { Icon } from '../components/Icon';
 import { PlanCard } from '../components/PlanCard';
-import { formatDateLong, greetingFor, todayISO } from '../lib/format';
+import { greetingFor, todayISO } from '../lib/format';
 import { planDisplayName, useAppState } from '../state/AppState';
 
 export function Home() {
@@ -10,77 +10,60 @@ export function Home() {
   const now = new Date();
   // Most recently saved first.
   const bySaved = [...savedPlans].sort((a, b) => (b.savedAt ?? b.createdAt).localeCompare(a.savedAt ?? a.createdAt));
-  const [featured, ...rest] = bySaved;
+  const upcoming = bySaved.filter((p) => p.input.date >= todayISO());
 
   return (
     <div className="page page-home">
-      <header className="hero">
-        <p className="eyebrow">{formatDateLong(todayISO())}</p>
+      <header className="home-head">
+        <p className="home-greeting">{greetingFor(now)} <span aria-hidden="true">♡</span></p>
         <h1 className="hero-title">
-          {greetingFor(now)}.
-          <br />
-          <em>Mau ke mana kalian hari ini?</em>
+          Mau date ke mana nih?
+          <span className="title-deco" aria-hidden="true">✦</span>
         </h1>
-        <p className="page-lead">
-          Susun rencana kencan yang rapi — dari kopi pertama sampai perjalanan pulang — dalam
-          beberapa langkah.
-        </p>
-        <Link to="/buat" className="button button-primary button-lg">
-          <Icon name="plus" />
-          Buat Rencana Kencan
-        </Link>
-        {draft && (
-          <Link to="/hasil" className="draft-link">
-            Lanjutkan draf: <strong>{planDisplayName(draft)}</strong>
-            <Icon name="arrow-right" size={16} />
-          </Link>
-        )}
       </header>
 
-      {savedPlans.length === 0 ? (
-        <section className="section">
-          <EmptyState
-            title="Belum ada rencana tersimpan"
-            body="Rencana yang kamu simpan akan muncul di sini. Mulai dengan membuat rencana baru, atau muat contoh untuk melihat tampilannya."
-            actions={
-              <>
-                <Link to="/buat" className="button button-primary">
-                  Buat rencana
-                </Link>
-                <button type="button" className="button button-ghost" onClick={loadSamplePlans}>
-                  Muat contoh rencana
-                </button>
-              </>
-            }
-          />
-        </section>
-      ) : (
-        <div className="home-grid">
-          <section className="section">
-            <div className="section-head">
-              <h2 className="section-title">Terakhir disimpan</h2>
-            </div>
-            <PlanCard plan={featured} variant="preview" />
-          </section>
+      <Link to="/buat" className="cta-card">
+        <span className="cta-art" aria-hidden="true">
+          <Icon name="heart" size={30} />
+        </span>
+        <span className="cta-text">
+          <span className="cta-title">Bikin date baru</span>
+          <span className="cta-sub">6 pertanyaan singkat, langsung dapet ide</span>
+        </span>
+        <span className="cta-go" aria-hidden="true">
+          <Icon name="chevron-right" size={22} />
+        </span>
+      </Link>
 
-          <section className="section">
-            <div className="section-head">
-              <h2 className="section-title">Rencana terbaru</h2>
-              <Link to="/tersimpan" className="text-link">
-                Lihat semua
-              </Link>
-            </div>
-            {rest.length ? (
-              <div className="stack">
-                {rest.slice(0, 3).map((p) => (
-                  <PlanCard key={p.id} plan={p} />
-                ))}
-              </div>
-            ) : (
-              <p className="muted">Belum ada rencana lain. Rencana baru akan muncul di sini.</p>
-            )}
-          </section>
-        </div>
+      {draft && (
+        <Link to="/hasil" className="draft-link">
+          <Icon name="sparkle" size={16} /> Lanjutin: <strong>{planDisplayName(draft)}</strong>
+        </Link>
+      )}
+
+      {savedPlans.length === 0 ? (
+        <EmptyState
+          title="Belum ada date nih ♡"
+          body="Date yang kamu simpan bakal muncul di sini."
+          actions={
+            <>
+              <Link to="/buat" className="button button-primary">Bikin date pertama</Link>
+              <button type="button" className="button button-ghost" onClick={loadSamplePlans}>Lihat contoh</button>
+            </>
+          }
+        />
+      ) : (
+        <section className="section" aria-labelledby="home-dates">
+          <div className="section-head">
+            <h2 className="section-title" id="home-dates">{upcoming.length ? 'Date kamu' : 'Date tersimpan'}</h2>
+            <Link to="/tersimpan" className="text-link">Lihat semua</Link>
+          </div>
+          <div className="card-scroller">
+            {(upcoming.length ? upcoming : bySaved).slice(0, 8).map((p) => (
+              <PlanCard key={p.id} plan={p} />
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

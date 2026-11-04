@@ -1,7 +1,7 @@
 import type { PlanIssue } from '../../types';
 
 const ORDER = { error: 0, warning: 1, info: 2 } as const;
-const LABEL = { error: 'Perlu perhatian', warning: 'Peringatan', info: 'Info' } as const;
+const LABEL = { error: 'Penting', warning: 'Perhatian', info: 'Info' } as const;
 
 export function IssueList({ issues, title }: { issues: PlanIssue[]; title?: string }) {
   if (!issues.length) return null;

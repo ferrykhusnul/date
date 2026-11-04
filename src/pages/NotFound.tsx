@@ -5,8 +5,8 @@ export function NotFound() {
   return (
     <div className="page page-narrow">
       <EmptyState
-        title="Halaman tidak ditemukan"
-        body="Alamat yang kamu buka tidak tersedia."
+        title="Halaman nggak ketemu"
+        body="Kayaknya alamatnya salah deh."
         actions={
           <Link to="/" className="button button-primary">
             Ke beranda

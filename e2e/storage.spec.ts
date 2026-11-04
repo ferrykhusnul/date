@@ -1,5 +1,5 @@
 import { writeFileSync } from 'node:fs';
-import { expect, seedVenues, test } from './fixtures';
+import { createDate, expect, seedVenues, test } from './fixtures';
 
 test('corrupt stored data is quarantined and reported, app keeps working', async ({ page, consoleErrors }) => {
   void consoleErrors;
@@ -15,7 +15,7 @@ test('corrupt stored data is quarantined and reported, app keeps working', async
   expect(copies).toHaveLength(1);
   expect(await page.evaluate((k) => localStorage.getItem(k), copies[0])).toBe('{corrupt');
   await page.goto('/pengaturan');
-  await expect(page.getByLabel('Kota bawaan')).toHaveValue('Jakarta'); // invalid value replaced by default
+  await expect(page.getByLabel('Kota', { exact: true })).toHaveValue('Jakarta'); // invalid value replaced by default
   await expect(page.locator('.quarantine li')).toHaveCount(1);
   // Reload does not create another copy.
   await page.reload();
@@ -47,10 +47,8 @@ test('replace import needs acknowledgement and can be undone', async ({ page, co
   void consoleErrors;
   await seedVenues(page);
   page.on('dialog', (d) => d.accept());
-  await page.goto('/buat');
-  await page.getByLabel('Kota').fill('Kota Uji');
-  await page.getByRole('button', { name: 'Susun rencana' }).click();
-  await page.getByRole('button', { name: 'Simpan rencana' }).click();
+  await createDate(page);
+  await page.getByRole('button', { name: 'Simpan date' }).click();
   await expect(page).toHaveURL(/\/rencana\//);
 
   const file = info.outputPath('replace.json');
