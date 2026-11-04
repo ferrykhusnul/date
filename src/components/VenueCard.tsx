@@ -5,6 +5,7 @@ import { Icon } from './Icon';
 import { MapsLinks } from './MapsLinks';
 import { PriceEstimate } from './PriceEstimate';
 import { SampleBadge } from './SampleBadge';
+import { TransitBadge } from './TransitInfo';
 
 export function VenueCard({ venue }: { venue: Venue }) {
   return (
@@ -28,6 +29,9 @@ export function VenueCard({ venue }: { venue: Venue }) {
             {venue.district ? ` · ${venue.district}` : ''} · {venue.city}
           </span>
         </p>
+        <div className="venue-tile-transit">
+          <TransitBadge venue={venue} />
+        </div>
         <p className="venue-tile-tags">
           {venue.activities.map((a) => labelOf(ACTIVITY_OPTIONS, a as Activity)).join(' · ')}
         </p>

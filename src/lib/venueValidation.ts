@@ -1,8 +1,31 @@
-import type { Venue } from '../types';
-import { ACTIVITY_OPTIONS, CATEGORY_OPTIONS, VIBE_OPTIONS } from './options';
+import type { TransitAccess, TransitType, Venue } from '../types';
+import { ACTIVITY_OPTIONS, CATEGORY_OPTIONS, TRANSIT_TYPE_OPTIONS, VIBE_OPTIONS } from './options';
 import { isGoogleMapsUrl } from './maps';
 
-export type VenueErrors = Partial<Record<keyof Venue, string>>;
+export type VenueErrors = Partial<Record<keyof Venue, string>> & {
+  /** Per-row transit errors, keyed by row index. */
+  transitRows?: Record<number, Partial<Record<keyof TransitAccess, string>>>;
+};
+
+export const MAX_TRANSIT_ROWS = 4;
+export const MAX_STATION_DISTANCE = 5_000;
+export const MAX_WALKING_MINUTES = 60;
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TRANSIT_TYPES = TRANSIT_TYPE_OPTIONS.map((o) => o.value);
+
+export function validateTransitAccess(a: TransitAccess, today?: string): Partial<Record<keyof TransitAccess, string>> {
+  const e: Partial<Record<keyof TransitAccess, string>> = {};
+  if (!a.stationName.trim()) e.stationName = 'Nama stasiun/halte wajib diisi.';
+  if (!TRANSIT_TYPES.includes(a.transitType)) e.transitType = 'Pilih jenis transit.';
+  if (a.distanceMeters !== undefined && (!Number.isInteger(a.distanceMeters) || a.distanceMeters < 0 || a.distanceMeters > MAX_STATION_DISTANCE))
+    e.distanceMeters = `Jarak 0–${MAX_STATION_DISTANCE} meter.`;
+  if (a.walkingMinutes !== undefined && (!Number.isInteger(a.walkingMinutes) || a.walkingMinutes < 0 || a.walkingMinutes > MAX_WALKING_MINUTES))
+    e.walkingMinutes = `Waktu jalan 0–${MAX_WALKING_MINUTES} menit.`;
+  if (a.verifiedAt && (!DATE_RE.test(a.verifiedAt) || (today !== undefined && a.verifiedAt > today)))
+    e.verifiedAt = 'Tanggal verifikasi tidak valid.';
+  return e;
+}
 
 const MAX_PRICE = 100_000_000;
 
@@ -35,7 +58,13 @@ export function validateVenue(v: Venue): VenueErrors {
     else if (!isGoogleMapsUrl(v.googleMapsUrl))
       e.googleMapsUrl = 'Gunakan tautan https Google Maps (google.com/maps/… atau maps.app.goo.gl/…).';
   }
-  if (v.verifiedAt && !/^\d{4}-\d{2}-\d{2}$/.test(v.verifiedAt)) e.verifiedAt = 'Format tanggal tidak valid.';
+  if (v.verifiedAt && !DATE_RE.test(v.verifiedAt)) e.verifiedAt = 'Format tanggal tidak valid.';
+  const rows = v.transitAccess ?? [];
+  if (rows.length > MAX_TRANSIT_ROWS) e.transitAccess = `Maksimal ${MAX_TRANSIT_ROWS} stasiun/halte.`;
+  rows.forEach((row, i) => {
+    const re = validateTransitAccess(row);
+    if (Object.keys(re).length) (e.transitRows ??= {})[i] = re;
+  });
   return e;
 }
 
@@ -43,6 +72,23 @@ const isStr = (x: unknown): x is string => typeof x === 'string';
 const isNum = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
 const strArr = (x: unknown, allowed: string[]): string[] =>
   Array.isArray(x) ? x.filter((i): i is string => isStr(i) && allowed.includes(i)) : [];
+
+/** Keeps only well-formed transit rows from untrusted data. */
+export function parseTransitAccess(raw: unknown): TransitAccess[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const rows = raw
+    .filter((r): r is Record<string, unknown> => Boolean(r) && typeof r === 'object')
+    .map((r) => ({
+      stationName: isStr(r.stationName) ? r.stationName.trim() : '',
+      transitType: r.transitType as TransitType,
+      distanceMeters: isNum(r.distanceMeters) ? Math.round(r.distanceMeters) : undefined,
+      walkingMinutes: isNum(r.walkingMinutes) ? Math.round(r.walkingMinutes) : undefined,
+      verifiedAt: isStr(r.verifiedAt) && r.verifiedAt ? r.verifiedAt : undefined,
+    }))
+    .filter((a) => Object.keys(validateTransitAccess(a)).length === 0)
+    .slice(0, MAX_TRANSIT_ROWS);
+  return rows.length ? rows : undefined;
+}
 
 /** Coerces untrusted stored data into a Venue, or null if it is unusable. */
 export function parseStoredVenue(raw: unknown): Venue | null {
@@ -71,7 +117,14 @@ export function parseStoredVenue(raw: unknown): Venue | null {
     description: isStr(r.description) ? r.description : '',
     verifiedAt: isStr(r.verifiedAt) && r.verifiedAt ? r.verifiedAt : undefined,
     status: r.status === 'inactive' ? 'inactive' : 'active',
-    transitAccess: isStr(r.transitAccess) && r.transitAccess ? r.transitAccess : undefined,
+    transitAccess: parseTransitAccess(r.transitAccess),
+    // Phase 2 stored transit access as free text; keep it as a note.
+    transitNote:
+      isStr(r.transitNote) && r.transitNote
+        ? r.transitNote
+        : isStr(r.transitAccess) && r.transitAccess
+          ? r.transitAccess
+          : undefined,
   };
   return venue;
 }

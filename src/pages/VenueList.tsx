@@ -9,6 +9,7 @@ import {
   ACTIVITY_OPTIONS,
   CATEGORY_OPTIONS,
   ENVIRONMENT_OPTIONS,
+  TRANSIT_TYPE_OPTIONS,
   VIBE_OPTIONS,
 } from '../lib/options';
 import { EMPTY_FILTER, citiesOf, filterVenues, type VenueFilter } from '../lib/venueFilters';
@@ -65,7 +66,7 @@ export function VenueList() {
               id="vf-q"
               className="input"
               type="search"
-              placeholder="Nama, alamat, kecamatan…"
+              placeholder="Nama, alamat, kecamatan, stasiun…"
               value={filter.query}
               onChange={(e) => set('query', e.target.value)}
             />
@@ -83,6 +84,14 @@ export function VenueList() {
           <FilterSelect id="vf-price" label="Harga mulai maks. /orang" value={filter.maxPrice ? String(filter.maxPrice) : ''}
             onChange={(v) => set('maxPrice', Number(v) || 0)}
             options={PRICE_LIMITS.map((p) => ({ value: String(p), label: `≤ ${formatIDR(p)}` }))} />
+          <FilterSelect id="vf-transit" label="Akses transit" value={filter.transit}
+            onChange={(v) => set('transit', v as VenueFilter['transit'])}
+            options={[
+              { value: 'any', label: 'Ada data transit' },
+              { value: 'verified', label: 'Transit terverifikasi' },
+              { value: 'unknown', label: 'Belum diketahui' },
+              ...TRANSIT_TYPE_OPTIONS,
+            ]} />
           <div className="field">
             <label className="field-label" htmlFor="vf-status">
               Status

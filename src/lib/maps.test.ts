@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDirectionsUrl, buildSearchUrl, isGoogleMapsUrl, listingUrl, mapsQuery } from './maps';
+import { buildDirectionsUrl, buildRouteUrl, buildSearchUrl, isGoogleMapsUrl, listingUrl, mapsQuery, stationQuery } from './maps';
 
 const venue = {
   name: 'Kafe & Resto "Senja"',
@@ -74,5 +74,37 @@ describe('isGoogleMapsUrl', () => {
   it('listingUrl returns null without a valid listing', () => {
     expect(listingUrl({ googleMapsUrl: '' })).toBeNull();
     expect(listingUrl({ googleMapsUrl: ' https://maps.app.goo.gl/x ' })).toBe('https://maps.app.goo.gl/x');
+  });
+});
+
+describe('buildRouteUrl (transit and other modes)', () => {
+  it('uses the directions endpoint with URLSearchParams-encoded origin, destination and travelmode', () => {
+    const url = buildRouteUrl('Stasiun MRT Bundaran HI, Jakarta', 'Kafe & Resto "Senja", Jl. Contoh No. 12/3', 'transit');
+    expect(url.startsWith('https://www.google.com/maps/dir/?')).toBe(true);
+    const p = new URL(url).searchParams;
+    expect([...p.keys()]).toEqual(['api', 'origin', 'destination', 'travelmode']);
+    expect(p.get('api')).toBe('1');
+    expect(p.get('origin')).toBe('Stasiun MRT Bundaran HI, Jakarta');
+    expect(p.get('destination')).toBe('Kafe & Resto "Senja", Jl. Contoh No. 12/3');
+    expect(p.get('travelmode')).toBe('transit');
+    expect(url).toBe(
+      'https://www.google.com/maps/dir/?' +
+        new URLSearchParams({ api: '1', origin: 'Stasiun MRT Bundaran HI, Jakarta', destination: 'Kafe & Resto "Senja", Jl. Contoh No. 12/3', travelmode: 'transit' }).toString(),
+    );
+    expect(url).not.toMatch(/[ "#]/);
+  });
+
+  it('supports walking, driving and two-wheeler travel modes', () => {
+    for (const mode of ['walking', 'driving', 'two-wheeler'] as const) {
+      expect(new URL(buildRouteUrl('A', 'B', mode)).searchParams.get('travelmode')).toBe(mode);
+    }
+  });
+});
+
+describe('stationQuery', () => {
+  it('prefixes the station type unless the name already has one', () => {
+    expect(stationQuery({ stationName: 'Dukuh Atas', transitType: 'mrt' }, 'Jakarta')).toBe('Stasiun MRT Dukuh Atas, Jakarta');
+    expect(stationQuery({ stationName: 'Bundaran HI', transitType: 'transjakarta' }, 'Jakarta')).toBe('Halte TransJakarta Bundaran HI, Jakarta');
+    expect(stationQuery({ stationName: 'Stasiun Sudirman', transitType: 'krl' }, '')).toBe('Stasiun Sudirman');
   });
 });

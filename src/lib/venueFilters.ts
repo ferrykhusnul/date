@@ -1,4 +1,4 @@
-import type { Environment, Venue, VenueStatus } from '../types';
+import type { Environment, TransitType, Venue, VenueStatus } from '../types';
 
 export interface VenueFilter {
   query: string;
@@ -11,6 +11,8 @@ export interface VenueFilter {
   /** Maximum estimated price per person; 0 = no limit. */
   maxPrice: number;
   includeSamples: boolean;
+  /** '' = all, 'any' = has transit data, 'verified', 'unknown', or a transit type. */
+  transit: '' | 'any' | 'verified' | 'unknown' | TransitType;
 }
 
 export const EMPTY_FILTER: VenueFilter = {
@@ -23,6 +25,7 @@ export const EMPTY_FILTER: VenueFilter = {
   status: 'active',
   maxPrice: 0,
   includeSamples: false,
+  transit: '',
 };
 
 export function normalizeCity(city: string): string {
@@ -44,8 +47,17 @@ export function filterVenues(venues: Venue[], f: VenueFilter): Venue[] {
     if (f.vibe && !v.vibes.includes(f.vibe)) return false;
     if (f.environment && v.environment !== f.environment) return false;
     if (f.maxPrice > 0 && (v.priceUnknown || v.priceMin > f.maxPrice)) return false;
+    if (f.transit) {
+      const list = v.transitAccess ?? [];
+      if (f.transit === 'unknown' ? list.length > 0 : list.length === 0) return false;
+      if (f.transit === 'verified' && !list.some((a) => a.verifiedAt)) return false;
+      if (f.transit !== 'any' && f.transit !== 'verified' && f.transit !== 'unknown' && !list.some((a) => a.transitType === f.transit))
+        return false;
+    }
     if (q) {
-      const hay = [v.name, v.address, v.district ?? '', v.city, v.description].join(' ').toLowerCase();
+      const hay = [v.name, v.address, v.district ?? '', v.city, v.description, ...(v.transitAccess ?? []).map((a) => a.stationName)]
+        .join(' ')
+        .toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;

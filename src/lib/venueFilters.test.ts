@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SAMPLE_VENUES } from '../data/sampleVenues';
 import type { Venue } from '../types';
 import { EMPTY_FILTER, citiesOf, filterVenues, plannableVenues } from './venueFilters';
-import { parseStoredVenue, validateVenue } from './venueValidation';
+import { parseStoredVenue, parseTransitAccess, validateVenue } from './venueValidation';
 
 const make = (over: Partial<Venue>): Venue => ({
   id: over.id ?? 'v',
@@ -78,5 +78,35 @@ describe('parseStoredVenue', () => {
     expect(v?.vibes).toEqual(['santai']);
     expect(v?.status).toBe('active');
     expect(v?.isSample).toBeUndefined();
+  });
+});
+
+describe('transit metadata', () => {
+  it('is optional and validated when present', () => {
+    expect(validateVenue(make({ transitAccess: undefined }))).toEqual({});
+    const e = validateVenue(make({ transitAccess: [{ stationName: '', transitType: 'mrt', distanceMeters: -5, walkingMinutes: 90 }] }));
+    expect(Object.keys(e.transitRows![0]).sort()).toEqual(['distanceMeters', 'stationName', 'walkingMinutes']);
+  });
+
+  it('drops malformed rows from storage and keeps legacy text as a note', () => {
+    expect(parseTransitAccess([{ stationName: 'S', transitType: 'mrt' }, { stationName: 'X', transitType: 'bus' }, null])).toEqual([
+      { stationName: 'S', transitType: 'mrt', distanceMeters: undefined, walkingMinutes: undefined, verifiedAt: undefined },
+    ]);
+    const legacy = parseStoredVenue({ ...make({}), transitAccess: 'Dekat halte' });
+    expect(legacy?.transitAccess).toBeUndefined();
+    expect(legacy?.transitNote).toBe('Dekat halte');
+  });
+
+  it('filters by transit availability, verification and type', () => {
+    const vs = [
+      make({ id: 't1', transitAccess: [{ stationName: 'S', transitType: 'mrt', verifiedAt: '2026-10-01' }] }),
+      make({ id: 't2', transitAccess: [{ stationName: 'H', transitType: 'transjakarta' }] }),
+      make({ id: 't3' }),
+    ];
+    expect(ids(filterVenues(vs, { ...EMPTY_FILTER, transit: 'any' }))).toEqual(['t1', 't2']);
+    expect(ids(filterVenues(vs, { ...EMPTY_FILTER, transit: 'verified' }))).toEqual(['t1']);
+    expect(ids(filterVenues(vs, { ...EMPTY_FILTER, transit: 'unknown' }))).toEqual(['t3']);
+    expect(ids(filterVenues(vs, { ...EMPTY_FILTER, transit: 'transjakarta' }))).toEqual(['t2']);
+    expect(ids(filterVenues(vs, { ...EMPTY_FILTER, query: 'H' }))).toContain('t2');
   });
 });

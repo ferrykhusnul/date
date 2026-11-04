@@ -23,6 +23,8 @@ export function validateDateInput(v: DateInput, today: string = todayISO()): Inp
   else if (minutes > MAX_DURATION_MINUTES) e.durationHours = `Durasi maksimal ${formatDuration(MAX_DURATION_MINUTES)}.`;
   if (!(v.budget >= MIN_BUDGET)) e.budget = `Anggaran minimal ${formatIDR(MIN_BUDGET)}.`;
   if (v.activities.length === 0) e.activities = 'Pilih minimal satu aktivitas.';
+  if ((v.startLocation ?? '').length > 160) e.startLocation = 'Maksimal 160 karakter.';
+  if ((v.endLocation ?? '').length > 160) e.endLocation = 'Maksimal 160 karakter.';
   return e;
 }
 
@@ -82,7 +84,7 @@ export function validatePlan(plan: DatePlan, getVenue: (id: string) => Venue | u
 /** Minutes from the first start to the last end, including transit. */
 export function usedMinutes(plan: Pick<DatePlan, 'items' | 'transport'>): number {
   const activity = plan.items.reduce((s, i) => s + i.durationMinutes, 0);
-  return activity + Math.max(0, plan.items.length - 1) * plan.transport.minutesPerLeg;
+  return activity + plan.transport.legs.reduce((s, l) => s + l.bufferMinutes, 0);
 }
 
 export { MIN_SLOT_MINUTES };

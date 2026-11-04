@@ -1,7 +1,8 @@
-import type { Activity, Environment, ScoreBreakdown, Venue, Vibe } from '../types';
+import type { Activity, Environment, ScoreBreakdown, Transportation, Venue, Vibe } from '../types';
 import { formatDuration, formatIDR } from '../lib/format';
 import { ACTIVITY_OPTIONS, ENVIRONMENT_OPTIONS, VIBE_OPTIONS, labelOf } from '../lib/options';
 import { venueCost } from './budget';
+import { TRANSPORT_RANK_WEIGHT, isPublicTransport, rankScore, transportFit } from './transport';
 
 /**
  * Deterministic venue scoring. Each component is a 0–1 compatibility value;
@@ -36,6 +37,10 @@ export interface ScoreContext {
   perStopBudget: number;
   /** Planned minutes for this stop. */
   slotMinutes: number;
+  /** Chosen transportation; public transport adds a transport-fit factor to ranking. */
+  transportation?: Transportation;
+  /** The stop before this one, for proximity (coordinates only). */
+  previous?: Venue;
 }
 
 export interface ScoreResult {
@@ -105,6 +110,20 @@ export function scoreVenue(venue: Venue, ctx: ScoreContext): ScoreResult {
     parts.environment * WEIGHTS.environment +
     parts.duration * WEIGHTS.duration;
 
+  // Phase 3 compatibility score (unchanged weights), floored so 100 means a perfect match.
+  const compat = Math.floor(total + 1e-9);
+  const fit = ctx.transportation && isPublicTransport(ctx.transportation)
+    ? transportFit(venue, ctx.transportation, ctx.previous)
+    : undefined;
+
+  const reasons = explain(venue, ctx, parts);
+  if (fit) {
+    // Transport reasons compete for the top three by their share of the ranking.
+    const weighted = fit.reasons.map((text) => ({ weight: TRANSPORT_RANK_WEIGHT * 100 * fit.score, text }));
+    if (!venue.transitAccess?.length) weighted.push({ weight: 1, text: 'Akses transit venue ini belum diketahui.' });
+    reasons.splice(0, reasons.length, ...mergeReasons(explainWeighted(venue, ctx, parts), weighted));
+  }
+
   return {
     breakdown: {
       vibe: round2(parts.vibe),
@@ -112,11 +131,19 @@ export function scoreVenue(venue: Venue, ctx: ScoreContext): ScoreResult {
       budget: round2(parts.budget),
       environment: round2(parts.environment),
       duration: round2(parts.duration),
-      // Floored so 100 is reserved for a perfect match on every factor.
-      total: Math.floor(total + 1e-9),
+      total: compat,
+      transport: fit?.score,
+      rank: rankScore(compat, fit?.score),
     },
-    reasons: explain(venue, ctx, parts),
+    reasons,
   };
+}
+
+function mergeReasons(a: Weighted[], b: Weighted[]): string[] {
+  return [...a, ...b]
+    .sort((x, y) => y.weight - x.weight)
+    .slice(0, 3)
+    .map((x) => x.text);
 }
 
 /** Opening words of the budget-related reason templates. */
@@ -127,10 +154,17 @@ export function isBudgetReason(text: string): boolean {
   return BUDGET_REASON_PREFIXES.some((p) => text.startsWith(p));
 }
 
+type Weighted = { weight: number; text: string };
+type Parts = Pick<ScoreBreakdown, 'vibe' | 'activity' | 'budget' | 'environment' | 'duration'>;
+
 /** Deterministic, template-based explanation of the strongest factors. */
-function explain(venue: Venue, ctx: ScoreContext, p: Omit<ScoreBreakdown, 'total'>): string[] {
+function explain(venue: Venue, ctx: ScoreContext, p: Parts): string[] {
+  return mergeReasons(explainWeighted(venue, ctx, p), []);
+}
+
+function explainWeighted(venue: Venue, ctx: ScoreContext, p: Parts): Weighted[] {
   const vibe = labelOf(VIBE_OPTIONS, ctx.vibe).toLowerCase();
-  const r: { weight: number; text: string }[] = [];
+  const r: Weighted[] = [];
 
   if (p.vibe === 1) r.push({ weight: WEIGHTS.vibe, text: `Suasananya cocok untuk kencan ${vibe}.` });
   else if (p.vibe >= 0.5) r.push({ weight: WEIGHTS.vibe * p.vibe, text: `Suasananya mendekati nuansa ${vibe}.` });
@@ -153,8 +187,5 @@ function explain(venue: Venue, ctx: ScoreContext, p: Omit<ScoreBreakdown, 'total
   if (p.duration >= 0.8)
     r.push({ weight: WEIGHTS.duration * p.duration, text: `Lama kunjungan biasanya (${formatDuration(venue.visitDurationMinutes)}) pas dengan slot waktunya.` });
 
-  return r
-    .sort((a, b) => b.weight - a.weight)
-    .slice(0, 3)
-    .map((x) => x.text);
+  return r;
 }

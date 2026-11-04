@@ -1,9 +1,10 @@
-import type { Activity, Alternative, DatePlan, ItineraryItem, Venue, Vibe } from '../types';
+import type { Activity, Alternative, DatePlan, ItineraryItem, LegMode, Venue, Vibe } from '../types';
 import { formatDuration, minutesToTime, timeToMinutes } from '../lib/format';
 import { VIBE_OPTIONS, labelOf } from '../lib/options';
 import { clamp, roundTo } from './activities';
-import { computeBudget, transportEstimate, venueCost } from './budget';
+import { computeBudget, venueCost } from './budget';
 import { isBudgetReason, scoreVenue, type ScoreContext } from './scoring';
+import { buildLegs, isPublicTransport, transitTypeLabel } from './transport';
 import { usedMinutes } from './validation';
 
 /**
@@ -73,8 +74,20 @@ function itemNotes(item: ItineraryItem, plan: DatePlan, venue: Venue | undefined
     if (venue.visitDurationMinutes > 0 && item.durationMinutes < venue.visitDurationMinutes * 0.75)
       notes.push(`Waktunya lebih singkat dari kunjungan biasa (${formatDuration(venue.visitDurationMinutes)}).`);
     if (venue.environment === 'outdoor') notes.push('Luar ruangan — siapkan rencana cadangan jika hujan.');
-    if (plan.input.transportation === 'umum' && venue.transitAccess)
-      notes.push(`Akses transportasi umum: ${venue.transitAccess}`);
+    if (isPublicTransport(plan.input.transportation) || plan.input.transportation === 'campuran') {
+      const access = venue.transitAccess ?? [];
+      if (!access.length) notes.push('Info akses transit belum diketahui — cek rute di Google Maps.');
+      for (const a of access) {
+        const walk =
+          a.verifiedAt && typeof a.walkingMinutes === 'number'
+            ? ` · jalan kaki ±${a.walkingMinutes} menit (terverifikasi)`
+            : a.verifiedAt
+              ? ''
+              : ' · belum diverifikasi';
+        notes.push(`Akses: ${a.stationName} (${transitTypeLabel(a.transitType)})${walk}`);
+      }
+    }
+    if (venue.transitNote) notes.push(`Catatan transit: ${venue.transitNote}`);
   }
   if (item.costEdited && item.kind === 'venue') notes.push('Biaya disesuaikan manual.');
   if (timeToMinutes(item.endTime) >= 22 * 60 || timeToMinutes(item.endTime) < timeToMinutes(item.startTime))
@@ -84,15 +97,18 @@ function itemNotes(item: ItineraryItem, plan: DatePlan, venue: Venue | undefined
 
 /** Re-derives timeline, transport legs, notes, title and concept. */
 export function recalculate(plan: DatePlan, getVenue: VenueLookup): DatePlan {
-  const transport = transportEstimate(plan.input.transportation, plan.items.length);
+  const legs = buildLegs(plan.items, plan.input.transportation, plan.transport?.legModes ?? {}, getVenue);
+  // Keep only overrides that still match a pair of consecutive stops.
+  const keys = new Set(legs.map((l) => l.key));
+  const legModes = Object.fromEntries(Object.entries(plan.transport?.legModes ?? {}).filter(([k]) => keys.has(k)));
   let cursor = timeToMinutes(plan.input.startTime);
-  const timed = plan.items.map((item) => {
+  const timed = plan.items.map((item, i) => {
     const start = cursor;
     const end = start + item.durationMinutes;
-    cursor = end + transport.minutesPerLeg;
+    cursor = end + (legs[i]?.bufferMinutes ?? 0);
     return { ...item, startTime: minutesToTime(start), endTime: minutesToTime(end) };
   });
-  const next: DatePlan = { ...plan, transport, items: timed };
+  const next: DatePlan = { ...plan, transport: { mode: plan.input.transportation, legs, legModes }, items: timed };
   next.items = timed.map((i) => ({ ...i, notes: itemNotes(i, next, i.venueId ? getVenue(i.venueId) : undefined) }));
   next.title = buildTitle(next);
   next.concept = buildConcept(next);
@@ -149,7 +165,17 @@ export function setCost(plan: DatePlan, id: string, amount: number, getVenue: Ve
   );
 }
 
-export function scoreContextFor(plan: DatePlan, item: Pick<ItineraryItem, 'activity' | 'durationMinutes'>): ScoreContext {
+/** Mixed transportation only: choose how to travel between two stops. */
+export function setLegMode(plan: DatePlan, key: string, mode: LegMode, getVenue: VenueLookup): DatePlan {
+  if (plan.input.transportation !== 'campuran' || !plan.transport.legs.some((l) => l.key === key)) return plan;
+  return recalculate({ ...plan, transport: { ...plan.transport, legModes: { ...plan.transport.legModes, [key]: mode } } }, getVenue);
+}
+
+export function scoreContextFor(
+  plan: DatePlan,
+  item: Pick<ItineraryItem, 'id' | 'activity' | 'durationMinutes'>,
+  getVenue?: VenueLookup,
+): ScoreContext {
   const transportEst = computeBudget(plan).transportEstimate;
   const n = Math.max(1, plan.items.length);
   return {
@@ -159,7 +185,19 @@ export function scoreContextFor(plan: DatePlan, item: Pick<ItineraryItem, 'activ
     environment: plan.input.environment,
     perStopBudget: Math.max(0, plan.input.budget - transportEst) / n,
     slotMinutes: item.durationMinutes,
+    transportation: plan.input.transportation,
+    previous: previousVenue(plan, item.id, getVenue),
   };
+}
+
+function previousVenue(plan: DatePlan, itemId: string, getVenue?: VenueLookup): Venue | undefined {
+  if (!getVenue) return undefined;
+  const idx = plan.items.findIndex((i) => i.id === itemId);
+  for (let i = idx - 1; i >= 0; i--) {
+    const id = plan.items[i].venueId;
+    if (id) return getVenue(id);
+  }
+  return undefined;
 }
 
 export function replaceVenue(plan: DatePlan, id: string, venue: Venue, getVenue: VenueLookup): DatePlan {
@@ -169,11 +207,11 @@ export function replaceVenue(plan: DatePlan, id: string, venue: Venue, getVenue:
     current.activity && venue.activities.includes(current.activity)
       ? current.activity
       : ((plan.input.activities.find((a) => venue.activities.includes(a)) ?? venue.activities[0] ?? current.activity ?? null) as Activity | null);
-  const scored = scoreVenue(venue, scoreContextFor(plan, { activity, durationMinutes: current.durationMinutes }));
+  const scored = scoreVenue(venue, scoreContextFor(plan, { id, activity, durationMinutes: current.durationMinutes }, getVenue));
   const cost = venueCost(venue);
   const previous: Alternative[] =
     current.kind === 'venue' && current.venueId && current.score
-      ? [{ venueId: current.venueId, venueName: current.title, score: current.score.total, reason: 'Pilihan sebelumnya.' }]
+      ? [{ venueId: current.venueId, venueName: current.title, score: current.score.rank, reason: 'Pilihan sebelumnya.' }]
       : [];
   const alternatives = [...previous, ...current.alternatives].filter((a) => a.venueId !== venue.id).slice(0, 3);
   return recalculate(

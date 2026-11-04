@@ -1,4 +1,4 @@
-import type { Activity, Environment, Transportation, VenueStatus, Vibe } from '../types';
+import type { Activity, Environment, LegMode, TransitType, Transportation, VenueStatus, Vibe } from '../types';
 
 export interface Option<T extends string | number> {
   value: T;
@@ -49,12 +49,37 @@ export const ACTIVITY_OPTIONS: Option<Activity>[] = [
 ];
 
 export const TRANSPORT_OPTIONS: Option<Transportation>[] = [
-  { value: 'jalan-kaki', label: 'Jalan kaki' },
+  { value: 'transjakarta', label: 'TransJakarta' },
+  { value: 'mrt', label: 'MRT Jakarta' },
+  { value: 'lrt', label: 'LRT Jakarta' },
+  { value: 'krl', label: 'KRL Commuter Line' },
+  { value: 'umum', label: 'Transportasi umum (apa saja)' },
   { value: 'motor', label: 'Motor' },
-  { value: 'mobil', label: 'Mobil pribadi' },
-  { value: 'umum', label: 'Transportasi umum' },
-  { value: 'taksi-online', label: 'Taksi online' },
+  { value: 'mobil', label: 'Mobil' },
+  { value: 'jalan-kaki', label: 'Jalan kaki' },
+  { value: 'campuran', label: 'Moda campuran' },
 ];
+
+/** Modes a single leg can use (mixed plans pick one per leg). */
+export const LEG_MODE_OPTIONS: Option<LegMode>[] = TRANSPORT_OPTIONS.filter(
+  (o): o is Option<LegMode> => o.value !== 'campuran',
+);
+
+export const TRANSIT_TYPE_OPTIONS: Option<TransitType>[] = [
+  { value: 'transjakarta', label: 'TransJakarta' },
+  { value: 'mrt', label: 'MRT Jakarta' },
+  { value: 'lrt', label: 'LRT Jakarta' },
+  { value: 'krl', label: 'KRL Commuter Line' },
+];
+
+/** Short labels for badges. */
+export const TRANSIT_SHORT: Record<TransitType, string> = {
+  transjakarta: 'TJ',
+  mrt: 'MRT',
+  lrt: 'LRT',
+  krl: 'KRL',
+};
+
 
 export const ENVIRONMENT_OPTIONS: Option<Environment>[] = [
   { value: 'indoor', label: 'Dalam ruangan' },

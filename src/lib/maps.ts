@@ -1,4 +1,4 @@
-import type { Venue } from '../types';
+import type { TransitAccess, Venue } from '../types';
 
 /**
  * Google Maps URL helpers. Uses the public "Maps URLs" scheme only
@@ -65,4 +65,31 @@ export function isGoogleMapsUrl(raw: string): boolean {
  */
 export function listingUrl(venue: Pick<Venue, 'googleMapsUrl'>): string | null {
   return isGoogleMapsUrl(venue.googleMapsUrl) ? venue.googleMapsUrl.trim() : null;
+}
+
+/* ------------------------------------------------------------ routes */
+
+export type TravelMode = 'transit' | 'driving' | 'walking' | 'two-wheeler';
+
+/**
+ * Google Maps directions link between two free-text places. Built with
+ * URLSearchParams; Google Maps does all routing, timing and fares.
+ */
+export function buildRouteUrl(origin: string, destination: string, travelmode: TravelMode = 'transit'): string {
+  const params = new URLSearchParams({ api: '1', origin, destination, travelmode });
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+const STATION_PREFIX: Record<TransitAccess['transitType'], string> = {
+  transjakarta: 'Halte TransJakarta',
+  mrt: 'Stasiun MRT',
+  lrt: 'Stasiun LRT',
+  krl: 'Stasiun KRL',
+};
+
+/** Search text for a station, e.g. "Stasiun MRT Dukuh Atas, Jakarta". */
+export function stationQuery(access: Pick<TransitAccess, 'stationName' | 'transitType'>, city: string): string {
+  const name = access.stationName.trim();
+  const prefixed = /^(stasiun|halte|station|stop)\b/i.test(name) ? name : `${STATION_PREFIX[access.transitType]} ${name}`;
+  return [prefixed, city.trim()].filter(Boolean).join(', ');
 }

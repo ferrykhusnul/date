@@ -4,7 +4,8 @@ import type { Venue } from '../types';
  * SAMPLE DATA — placeholder venues so the planner can be tried before any real
  * venues exist. These are NOT real places: names, addresses and prices are
  * illustrative only. They carry `isSample: true`, have no Google Maps listing
- * and are never mixed into the curated dataset.
+ * and are never mixed into the curated dataset. Their transit stops are
+ * fictional too and are never marked verified.
  */
 export const SAMPLE_CITY = 'Kota Sampel';
 
@@ -55,6 +56,7 @@ export const SAMPLE_VENUES: Venue[] = [
     vibes: ['santai', 'romantis', 'kreatif'],
     activities: ['kopi'],
     environment: 'indoor',
+    transitAccess: [{ stationName: 'Stasiun Sampel Dua', transitType: 'mrt' }],
   },
   {
     ...base,
@@ -81,7 +83,7 @@ export const SAMPLE_VENUES: Venue[] = [
     vibes: ['santai', 'romantis'],
     activities: ['jalan', 'alam'],
     environment: 'outdoor',
-    transitAccess: 'Contoh: dekat halte sampel',
+    transitAccess: [{ stationName: 'Halte Sampel Satu', transitType: 'transjakarta' }],
   },
   {
     ...base,
@@ -95,6 +97,7 @@ export const SAMPLE_VENUES: Venue[] = [
     vibes: ['kreatif', 'elegan'],
     activities: ['galeri'],
     environment: 'indoor',
+    transitAccess: [{ stationName: 'Stasiun Sampel Dua', transitType: 'mrt' }],
   },
   {
     ...base,

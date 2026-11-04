@@ -1,4 +1,4 @@
-import type { DatePlan, ItineraryItem, PlanIssue, TransportEstimate, Transportation, Venue } from '../types';
+import type { DatePlan, ItineraryItem, PlanIssue, PlanLeg, Venue } from '../types';
 import { formatIDR } from '../lib/format';
 import { roundTo } from './activities';
 
@@ -9,15 +9,6 @@ import { roundTo } from './activities';
  */
 
 export const PEOPLE = 2;
-
-/** Rough per-leg cost range for two people moving between venues (IDR). */
-export const TRANSPORT_RATES: Record<Transportation, { min: number; max: number; minutes: number }> = {
-  'jalan-kaki': { min: 0, max: 0, minutes: 15 },
-  motor: { min: 5_000, max: 15_000, minutes: 15 },
-  mobil: { min: 10_000, max: 30_000, minutes: 20 },
-  umum: { min: 7_000, max: 20_000, minutes: 25 },
-  'taksi-online': { min: 25_000, max: 60_000, minutes: 20 },
-};
 
 export function hasPrice(v: Pick<Venue, 'priceMin' | 'priceMax' | 'priceUnknown'>): boolean {
   return (
@@ -43,15 +34,17 @@ export function venueCost(v: Pick<Venue, 'priceMin' | 'priceMax' | 'priceUnknown
   return { min, max, estimate: roundTo((min + max) / 2, 1000) };
 }
 
-export function transportEstimate(mode: Transportation, stops: number): TransportEstimate {
-  const r = TRANSPORT_RATES[mode];
-  return { mode, legs: Math.max(0, stops - 1), minutesPerLeg: r.minutes, perLegMin: r.min, perLegMax: r.max };
+export interface TransportCost extends CostRange {
+  /** Legs on public transport: their fares are not estimated. */
+  unpricedLegs: number;
 }
 
-export function transportCost(t: TransportEstimate): CostRange {
-  const min = t.perLegMin * t.legs;
-  const max = t.perLegMax * t.legs;
-  return { min, max, estimate: roundTo((min + max) / 2, 1000) };
+/** Sums leg allowances. Public-transport legs add nothing and are counted as unpriced. */
+export function transportCost(legs: Pick<PlanLeg, 'costMin' | 'costMax' | 'fareKnown'>[]): TransportCost {
+  const priced = legs.filter((l) => l.fareKnown);
+  const min = priced.reduce((s, l) => s + l.costMin, 0);
+  const max = priced.reduce((s, l) => s + l.costMax, 0);
+  return { min, max, estimate: roundTo((min + max) / 2, 1000), unpricedLegs: legs.length - priced.length };
 }
 
 export type BudgetStatus = 'within' | 'may-exceed' | 'over';
@@ -76,18 +69,20 @@ export interface BudgetSummary {
   unknownPriceCount: number;
   /** False when any item's price is unknown. */
   complete: boolean;
+  /** Moves on public transport whose fare is not included. */
+  unpricedLegs: number;
 }
 
 export function summarizeBudget(
   budget: number,
   items: Pick<ItineraryItem, 'costMin' | 'costMax' | 'costEstimate' | 'priceKnown'>[],
-  transport: TransportEstimate,
+  legs: Pick<PlanLeg, 'costMin' | 'costMax' | 'fareKnown'>[],
 ): BudgetSummary {
   const known = items.filter((i) => i.priceKnown);
   const itemsMin = known.reduce((s, i) => s + i.costMin, 0);
   const itemsMax = known.reduce((s, i) => s + i.costMax, 0);
   const itemsEstimate = known.reduce((s, i) => s + i.costEstimate, 0);
-  const t = transportCost(transport);
+  const t = transportCost(legs);
   const totalMin = itemsMin + t.min;
   const totalMax = itemsMax + t.max;
   const totalEstimate = itemsEstimate + t.estimate;
@@ -109,11 +104,12 @@ export function summarizeBudget(
     status,
     unknownPriceCount: items.length - known.length,
     complete: known.length === items.length,
+    unpricedLegs: t.unpricedLegs,
   };
 }
 
 export function computeBudget(plan: Pick<DatePlan, 'input' | 'items' | 'transport'>): BudgetSummary {
-  return summarizeBudget(plan.input.budget, plan.items, plan.transport);
+  return summarizeBudget(plan.input.budget, plan.items, plan.transport.legs);
 }
 
 export function budgetIssues(b: BudgetSummary): PlanIssue[] {
@@ -136,6 +132,13 @@ export function budgetIssues(b: BudgetSummary): PlanIssue[] {
       code: 'MISSING_PRICE',
       severity: 'warning',
       message: `${b.unknownPriceCount} tempat belum punya data harga dan tidak dihitung dalam total. Total sebenarnya bisa lebih tinggi.`,
+    });
+  }
+  if (b.unpricedLegs > 0) {
+    issues.push({
+      code: 'TRANSIT_FARE_NOT_ESTIMATED',
+      severity: 'info',
+      message: `Tarif transportasi umum untuk ${b.unpricedLegs} perpindahan tidak dihitung. Cek tarif di Google Maps atau aplikasi operator.`,
     });
   }
   return issues;

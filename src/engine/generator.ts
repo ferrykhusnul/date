@@ -3,7 +3,8 @@ import { formatDuration, formatIDR, timeToMinutes } from '../lib/format';
 import { ACTIVITY_OPTIONS, ENVIRONMENT_OPTIONS, labelOf } from '../lib/options';
 import { sameCity } from '../lib/venueFilters';
 import { ACTIVITY_PROFILE, COMPLEMENTS, MIN_SLOT_MINUTES, clamp, roundTo } from './activities';
-import { TRANSPORT_RATES, transportCost, transportEstimate, venueCost } from './budget';
+import { transportCost, venueCost } from './budget';
+import { MODE_PROFILE, defaultLegMode, isPublicTransport } from './transport';
 import { recalculate } from './itinerary';
 import { scoreVenue, type ScoreResult } from './scoring';
 import { MIN_DURATION_MINUTES, venueGaps } from './validation';
@@ -37,9 +38,10 @@ interface Candidate {
 
 const actLabel = (a: Activity) => labelOf(ACTIVITY_OPTIONS, a).toLowerCase();
 
-function maxStopsFor(totalMinutes: number, transit: number): number {
+/** Public-transport plans keep transfers low: at most 3 stops, 2 for dates up to 3 hours. */
+export function maxStopsFor(totalMinutes: number, transit: number, publicTransport = false): number {
   const byLength = totalMinutes <= 90 ? 1 : totalMinutes <= 150 ? 2 : totalMinutes <= 240 ? 3 : 4;
-  let n = byLength;
+  let n = publicTransport ? Math.min(byLength, totalMinutes <= 180 ? 2 : 3) : byLength;
   while (n > 1 && n * MIN_SLOT_MINUTES + (n - 1) * transit > totalMinutes) n--;
   return n;
 }
@@ -75,6 +77,7 @@ export function selectActivities(requested: Activity[], available: Set<Activity>
 }
 
 function compareCandidates(a: Candidate, b: Candidate): number {
+  if (b.result.breakdown.rank !== a.result.breakdown.rank) return b.result.breakdown.rank - a.result.breakdown.rank;
   if (b.result.breakdown.total !== a.result.breakdown.total) return b.result.breakdown.total - a.result.breakdown.total;
   const ca = venueCost(a.venue)?.estimate ?? Number.POSITIVE_INFINITY;
   const cb = venueCost(b.venue)?.estimate ?? Number.POSITIVE_INFINITY;
@@ -120,7 +123,10 @@ export function allocateDurations(bases: { min: number; base: number; max: numbe
 export function generateItinerary(input: DateInput, venues: Venue[], opts: GenerateOptions): GenerationResult {
   const issues: PlanIssue[] = [];
   const totalMinutes = Math.round(input.durationHours * 60);
-  const rate = TRANSPORT_RATES[input.transportation];
+  const usesPublic = isPublicTransport(input.transportation);
+  // Conservative planning buffer per move (mixed plans assume public transport until legs are known).
+  const legProfile = MODE_PROFILE[defaultLegMode(input.transportation)];
+  const rate = { minutes: legProfile.bufferMinutes };
   const requested = [...new Set(input.activities)];
 
   // Duration too short.
@@ -170,7 +176,14 @@ export function generateItinerary(input: DateInput, venues: Venue[], opts: Gener
   }
 
   // Slot count from duration, limited by venue supply.
-  const wantedStops = maxStopsFor(totalMinutes, rate.minutes);
+  const wantedStops = maxStopsFor(totalMinutes, rate.minutes, usesPublic);
+  if (usesPublic && wantedStops < maxStopsFor(totalMinutes, rate.minutes)) {
+    issues.push({
+      code: 'FEWER_TRANSFERS',
+      severity: 'info',
+      message: `Dengan transportasi umum, rencana dibatasi ${wantedStops} tempat agar tidak terlalu sering berpindah.`,
+    });
+  }
   if (pool.length < wantedStops) {
     issues.push({
       code: 'INSUFFICIENT_VENUES',
@@ -197,10 +210,12 @@ export function generateItinerary(input: DateInput, venues: Venue[], opts: Gener
     });
   }
   const sequence = selectActivities(requested, available, slots, input.startTime);
-  const slotActivities: (Activity | undefined)[] = Array.from({ length: slots }, (_, i) => sequence[i]);
+  // Never repeat an activity just to fill a slot: fewer, longer stops instead.
+  const slotCount = sequence.length ? Math.min(slots, sequence.length) : slots;
+  const slotActivities: (Activity | undefined)[] = Array.from({ length: slotCount }, (_, i) => sequence[i]);
 
   // Budget available for venues after transport.
-  const transportEst = transportCost(transportEstimate(input.transportation, slots)).estimate;
+  const transportEst = transportCost(Array.from({ length: Math.max(0, slotCount - 1) }, () => legProfile)).estimate;
   const venueBudget = input.budget - transportEst;
   if (venueBudget <= 0) {
     issues.push({
@@ -210,7 +225,7 @@ export function generateItinerary(input: DateInput, venues: Venue[], opts: Gener
     });
   }
 
-  const transitTotal = (slots - 1) * rate.minutes;
+  const transitTotal = (slotCount - 1) * rate.minutes;
   const typicalSum = slotActivities.reduce((s, a) => s + (a ? ACTIVITY_PROFILE[a].typical : 60), 0);
   const fit = Math.min(1, (totalMinutes - transitTotal) / typicalSum);
 
@@ -221,7 +236,7 @@ export function generateItinerary(input: DateInput, venues: Venue[], opts: Gener
   let budgetTooLowReported = venueBudget <= 0;
 
   slotActivities.forEach((target, i) => {
-    const perStop = remaining / (slots - i);
+    const perStop = remaining / (slotCount - i);
     const slotMinutes = (target ? ACTIVITY_PROFILE[target].typical : 60) * fit;
     const unused = pool.filter((v) => !used.has(v.id));
     if (!unused.length) return;
@@ -236,6 +251,8 @@ export function generateItinerary(input: DateInput, venues: Venue[], opts: Gener
           environment: input.environment,
           perStopBudget: perStop,
           slotMinutes,
+          transportation: input.transportation,
+          previous: picks[picks.length - 1]?.venue,
         }),
       }))
       .sort(compareCandidates);
@@ -283,7 +300,7 @@ export function generateItinerary(input: DateInput, venues: Venue[], opts: Gener
   });
 
   // 8. Respect total duration.
-  const transit = transportEstimate(input.transportation, picks.length).minutesPerLeg;
+  const transit = rate.minutes;
   const availableMinutes = totalMinutes - Math.max(0, picks.length - 1) * transit;
   const durations = allocateDurations(
     picks.map(({ venue, activity }) => {
@@ -304,8 +321,8 @@ export function generateItinerary(input: DateInput, venues: Venue[], opts: Gener
       .map((c) => ({
         venueId: c.venue.id,
         venueName: c.venue.name,
-        score: c.result.breakdown.total,
-        reason: c.result.reasons[0] ?? `Skor ${c.result.breakdown.total}/100.`,
+        score: c.result.breakdown.rank,
+        reason: c.result.reasons[0] ?? `Skor ${c.result.breakdown.rank}/100.`,
       }));
     return {
       id: `item-${i + 1}-${p.venue.id}`,
@@ -328,6 +345,17 @@ export function generateItinerary(input: DateInput, venues: Venue[], opts: Gener
     };
   });
 
+  if (usesPublic || input.transportation === 'campuran') {
+    const unknown = picks.filter((p) => !p.venue.transitAccess?.length).length;
+    if (unknown > 0) {
+      issues.push({
+        code: 'TRANSIT_UNKNOWN',
+        severity: 'info',
+        message: `${unknown} tempat belum punya data akses transit. Gunakan tombol rute untuk mengecek di Google Maps.`,
+      });
+    }
+  }
+
   if (opts.usesSampleVenues) {
     issues.push({
       code: 'SAMPLE_VENUES',
@@ -344,7 +372,7 @@ export function generateItinerary(input: DateInput, venues: Venue[], opts: Gener
       concept: '',
       input,
       items,
-      transport: transportEstimate(input.transportation, items.length),
+      transport: { mode: input.transportation, legs: [], legModes: {} },
       generationIssues: issues,
       createdAt: opts.createdAt,
       usesSampleVenues: Boolean(opts.usesSampleVenues),

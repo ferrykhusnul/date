@@ -8,7 +8,33 @@ export type Activity =
   | 'belanja'
   | 'alam'
   | 'hiburan';
-export type Transportation = 'jalan-kaki' | 'motor' | 'mobil' | 'umum' | 'taksi-online';
+export type Transportation =
+  | 'transjakarta'
+  | 'mrt'
+  | 'lrt'
+  | 'krl'
+  | 'umum'
+  | 'motor'
+  | 'mobil'
+  | 'jalan-kaki'
+  | 'campuran';
+
+/** A single way of moving between two places (everything except 'campuran'). */
+export type LegMode = Exclude<Transportation, 'campuran'>;
+
+export type TransitType = 'transjakarta' | 'mrt' | 'lrt' | 'krl';
+
+/**
+ * Known public-transport access for a venue. Optional on every venue.
+ * Distances and walking times are only shown as verified when `verifiedAt` is set.
+ */
+export interface TransitAccess {
+  stationName: string;
+  transitType: TransitType;
+  distanceMeters?: number;
+  walkingMinutes?: number;
+  verifiedAt?: string; // YYYY-MM-DD
+}
 export type Environment = 'indoor' | 'outdoor' | 'mixed';
 export type VenueStatus = 'active' | 'inactive';
 
@@ -40,8 +66,10 @@ export interface Venue {
   /** ISO date (YYYY-MM-DD) when the details were last checked by a person. */
   verifiedAt?: string;
   status: VenueStatus;
-  /** Optional free-text public transport access note, e.g. nearest station. */
-  transitAccess?: string;
+  /** Optional structured public-transport access (nearest stations/stops). */
+  transitAccess?: TransitAccess[];
+  /** Optional free-text transit note (legacy field from earlier versions). */
+  transitNote?: string;
   /** True for placeholder records that do not describe a real place. */
   isSample?: boolean;
   /**
@@ -65,6 +93,10 @@ export interface DateInput {
   transportation: Transportation;
   environment: Environment;
   notes: string;
+  /** Optional free-text start point, used only for Google Maps links. */
+  startLocation?: string;
+  /** Optional free-text final destination, used only for Google Maps links. */
+  endLocation?: string;
 }
 
 export type IssueSeverity = 'error' | 'warning' | 'info';
@@ -88,7 +120,10 @@ export type IssueCode =
   | 'INACTIVE_VENUE'
   | 'MISSING_VENUE'
   | 'UNUSED_TIME'
-  | 'SAMPLE_VENUES';
+  | 'SAMPLE_VENUES'
+  | 'TRANSIT_UNKNOWN'
+  | 'FEWER_TRANSFERS'
+  | 'TRANSIT_FARE_NOT_ESTIMATED';
 
 export interface PlanIssue {
   code: IssueCode;
@@ -103,7 +138,12 @@ export interface ScoreBreakdown {
   budget: number;
   environment: number;
   duration: number;
+  /** Phase 3 compatibility score, 0–100. */
   total: number;
+  /** Transport compatibility 0–1; present when transport influences ranking. */
+  transport?: number;
+  /** Score used for ranking, 0–100 (equals `total` unless transport applies). */
+  rank: number;
 }
 
 export interface Alternative {
@@ -143,13 +183,29 @@ export interface ItineraryItem {
   userNote?: string;
 }
 
-export interface TransportEstimate {
+/** One move between consecutive stops. Derived from the item order. */
+export interface PlanLeg {
+  /** `${fromItemId}>${toItemId}` — stable across recalculation. */
+  key: string;
+  fromItemId: string;
+  toItemId: string;
+  mode: LegMode;
+  /** Planning buffer reserved in the timeline — NOT a routed travel time. */
+  bufferMinutes: number;
+  /** Rough cost range for two (IDR); only meaningful when fareKnown. */
+  costMin: number;
+  costMax: number;
+  /** False for public transport: fares are not estimated. */
+  fareKnown: boolean;
+  /** Straight-line distance, only when both venues have coordinates. */
+  straightLineMeters?: number;
+}
+
+export interface TransportPlan {
   mode: Transportation;
-  legs: number;
-  minutesPerLeg: number;
-  /** Per-leg cost range for two people (IDR). */
-  perLegMin: number;
-  perLegMax: number;
+  legs: PlanLeg[];
+  /** Per-leg mode chosen by the user (mixed transportation only). */
+  legModes: Record<string, LegMode>;
 }
 
 export interface DatePlan {
@@ -158,7 +214,7 @@ export interface DatePlan {
   concept: string;
   input: DateInput;
   items: ItineraryItem[];
-  transport: TransportEstimate;
+  transport: TransportPlan;
   /** Issues found while generating (edit-time checks come from validatePlan). */
   generationIssues: PlanIssue[];
   createdAt: string; // ISO

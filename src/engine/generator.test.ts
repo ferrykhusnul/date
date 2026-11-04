@@ -49,7 +49,7 @@ describe('generateItinerary', () => {
     }
     const { plan } = generateItinerary(input({ startTime: '16:00', durationHours: 4 }), POOL, OPTS);
     expect(plan!.items[0].startTime).toBe('16:00');
-    expect(plan!.items[1].startTime).toBe(addMinutes(plan!.items[0].endTime, plan!.transport.minutesPerLeg));
+    expect(plan!.items[1].startTime).toBe(addMinutes(plan!.items[0].endTime, plan!.transport.legs[0].bufferMinutes));
   });
 
   it('respects the budget when possible', () => {
@@ -81,6 +81,16 @@ describe('generateItinerary', () => {
   });
 });
 
+describe('no repeated activities', () => {
+  it('uses fewer, longer stops instead of repeating an activity', () => {
+    const pool = POOL.filter((v) => v.activities.includes('kopi') || v.activities.includes('makan'));
+    const { plan } = generateItinerary(input({ durationHours: 6, activities: ['kopi', 'makan'] }), pool, OPTS);
+    const acts = plan!.items.map((i) => i.activity);
+    expect(new Set(acts).size).toBe(acts.length);
+    expect(plan!.items).toHaveLength(2);
+  });
+});
+
 describe('edge cases', () => {
   it('no venues available', () => {
     const r = generateItinerary(input({ city: 'Kota Kosong' }), POOL, OPTS);
@@ -89,7 +99,8 @@ describe('edge cases', () => {
   });
 
   it('insufficient venues', () => {
-    const r = generateItinerary(input({ durationHours: 6 }), POOL.slice(0, 2), OPTS);
+    const two = POOL.filter((v) => v.id === 'kafe-a' || v.id === 'resto-a');
+    const r = generateItinerary(input({ durationHours: 6 }), two, OPTS);
     expect(r.plan!.items).toHaveLength(2);
     expect(codes(r)).toContain('INSUFFICIENT_VENUES');
   });
@@ -168,8 +179,8 @@ describe('manual editing', () => {
     const removed = p.items[1];
     const q = removeItem(p, removed.id, get);
     expect(q.items).toHaveLength(2);
-    expect(q.items[1].startTime).toBe(addMinutes(q.items[0].endTime, q.transport.minutesPerLeg));
-    expect(q.transport.legs).toBe(1);
+    expect(q.items[1].startTime).toBe(addMinutes(q.items[0].endTime, q.transport.legs[0].bufferMinutes));
+    expect(q.transport.legs).toHaveLength(1);
     expect(computeBudget(q).totalEstimate).toBe(before - removed.costEstimate - 10_000); // one motor leg fewer
   });
 

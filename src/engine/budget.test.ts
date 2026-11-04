@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { budgetIssues, hasPrice, summarizeBudget, transportCost, transportEstimate, venueCost } from './budget';
+import { budgetIssues, hasPrice, summarizeBudget, transportCost, venueCost } from './budget';
+import { MODE_PROFILE } from './transport';
+import type { LegMode } from '../types';
+
+/** n legs using a mode's profile. */
+const legs = (mode: LegMode, n: number) => Array.from({ length: n }, () => MODE_PROFILE[mode]);
 
 const item = (min: number, max: number, estimate: number, priceKnown = true) => ({ costMin: min, costMax: max, costEstimate: estimate, priceKnown });
 
@@ -19,17 +24,22 @@ describe('venue pricing', () => {
 });
 
 describe('transport', () => {
-  it('counts legs between stops only', () => {
-    expect(transportEstimate('motor', 3).legs).toBe(2);
-    expect(transportEstimate('motor', 1).legs).toBe(0);
-    expect(transportEstimate('motor', 0).legs).toBe(0);
-    expect(transportCost(transportEstimate('motor', 3))).toEqual({ min: 10_000, max: 30_000, estimate: 20_000 });
-    expect(transportCost(transportEstimate('jalan-kaki', 4))).toEqual({ min: 0, max: 0, estimate: 0 });
+  it('sums rough allowances for priced legs', () => {
+    expect(transportCost(legs('motor', 2))).toEqual({ min: 10_000, max: 30_000, estimate: 20_000, unpricedLegs: 0 });
+    expect(transportCost(legs('jalan-kaki', 3))).toEqual({ min: 0, max: 0, estimate: 0, unpricedLegs: 0 });
+    expect(transportCost([])).toEqual({ min: 0, max: 0, estimate: 0, unpricedLegs: 0 });
+  });
+
+  it('never estimates public transport fares', () => {
+    for (const mode of ['transjakarta', 'mrt', 'lrt', 'krl', 'umum'] as const) {
+      expect(transportCost(legs(mode, 2))).toEqual({ min: 0, max: 0, estimate: 0, unpricedLegs: 2 });
+    }
+    expect(transportCost([...legs('mrt', 1), ...legs('mobil', 1)])).toEqual({ min: 10_000, max: 30_000, estimate: 20_000, unpricedLegs: 1 });
   });
 });
 
 describe('summarizeBudget', () => {
-  const t = transportEstimate('motor', 3); // 10k–30k, est 20k
+  const t = legs('motor', 2); // 10k–30k, est 20k
 
   it('computes totals, remaining and utilisation', () => {
     const b = summarizeBudget(500_000, [item(60_000, 120_000, 90_000), item(200_000, 400_000, 300_000), item(0, 0, 0)], t);
@@ -61,15 +71,22 @@ describe('summarizeBudget', () => {
   });
 
   it('excludes unknown prices from totals and reports them', () => {
-    const b = summarizeBudget(500_000, [item(60_000, 120_000, 90_000), item(0, 0, 0, false)], transportEstimate('jalan-kaki', 2));
+    const b = summarizeBudget(500_000, [item(60_000, 120_000, 90_000), item(0, 0, 0, false)], legs('jalan-kaki', 1));
     expect(b.totalEstimate).toBe(90_000);
     expect(b.unknownPriceCount).toBe(1);
     expect(b.complete).toBe(false);
     expect(budgetIssues(b).map((i) => i.code)).toContain('MISSING_PRICE');
   });
 
+  it('reports public-transport legs as unpriced', () => {
+    const b = summarizeBudget(500_000, [item(60_000, 120_000, 90_000)], legs('krl', 2));
+    expect(b.transportEstimate).toBe(0);
+    expect(b.unpricedLegs).toBe(2);
+    expect(budgetIssues(b).map((i) => i.code)).toContain('TRANSIT_FARE_NOT_ESTIMATED');
+  });
+
   it('handles a zero budget without dividing by zero', () => {
-    const b = summarizeBudget(0, [item(0, 0, 0)], transportEstimate('jalan-kaki', 1));
+    const b = summarizeBudget(0, [item(0, 0, 0)], legs('jalan-kaki', 0));
     expect(b.utilization).toBeNull();
     expect(b.status).toBe('within');
   });

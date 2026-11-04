@@ -18,15 +18,18 @@ import {
   replaceVenue,
   setCost,
   setDuration,
+  setLegMode,
   type CustomActivityInput,
 } from '../engine/itinerary';
+import { defaultLegMode, isPublicTransport } from '../engine/transport';
+import { TransitionRow, placeOfVenue, type Place } from '../components/itinerary/TransitionRow';
 import { validatePlan } from '../engine/validation';
 import { formatDateLong, formatDuration } from '../lib/format';
 import { ENVIRONMENT_OPTIONS, TRANSPORT_OPTIONS, VIBE_OPTIONS, labelOf } from '../lib/options';
 import { plannableVenues } from '../lib/venueFilters';
 import { useAppState } from '../state/AppState';
 import { useVenues } from '../state/VenueStore';
-import type { DatePlan, Venue } from '../types';
+import type { DatePlan, ItineraryItem, LegMode, Venue } from '../types';
 
 /** Shows and edits the current draft (/hasil) or a saved plan (/rencana/:id). */
 export function DateResult() {
@@ -83,6 +86,24 @@ export function DateResult() {
     },
   };
   const onAddCustom = (input: CustomActivityInput) => commit(addCustomItem(plan, input, getVenue));
+  const onLegMode = (key: string, mode: LegMode) => commit(setLegMode(plan, key, mode, getVenue));
+
+  const transitFocus = isPublicTransport(plan.input.transportation) || plan.input.transportation === 'campuran';
+  const placeOf = (item: ItineraryItem): Place =>
+    item.kind === 'venue' && item.venueId ? placeOfVenue(getVenue(item.venueId)) : null;
+  const noPlaceReason = (item: ItineraryItem): string | undefined => {
+    if (item.kind === 'custom') return `Lokasi "${item.title}" tidak diketahui, jadi rute tidak bisa dibuat otomatis.`;
+    const v = item.venueId ? getVenue(item.venueId) : undefined;
+    if (!v) return `"${item.title}" sudah tidak ada di dataset.`;
+    if (v.isSample) return 'Venue sampel tidak punya lokasi nyata, jadi rute dinonaktifkan.';
+    return undefined;
+  };
+  // Start/end links use the plan's mode (public transport for mixed plans), not a neighbouring leg's.
+  const edgeMode: LegMode = defaultLegMode(plan.input.transportation);
+  const startPlace: Place = plan.input.startLocation ? { label: plan.input.startLocation, query: plan.input.startLocation } : null;
+  const endPlace: Place = plan.input.endLocation ? { label: plan.input.endLocation, query: plan.input.endLocation } : null;
+  const firstItem = plan.items[0];
+  const lastItem = plan.items[plan.items.length - 1];
 
   const inPlan = new Set(plan.items.map((i) => i.venueId).filter(Boolean));
   const replacementsFor = (itemId: string) => {
@@ -158,8 +179,8 @@ export function DateResult() {
             </label>
           </div>
           <p className="field-hint">
-            Urutan mengikuti alur aktivitas; rute belum dioptimalkan berdasarkan jarak. Tiap perpindahan diperkirakan{' '}
-            {plan.transport.minutesPerLeg} menit dengan {labelOf(TRANSPORT_OPTIONS, plan.transport.mode).toLowerCase()}.
+            Urutan mengikuti alur aktivitas; rute belum dioptimalkan. Di antara tempat disisakan buffer perjalanan
+            (bukan estimasi rute) — durasi, rute, dan tarif sebenarnya dicek lewat tombol rute di Google Maps.
             {editing && ' Perubahan langsung menghitung ulang waktu dan biaya.'}
           </p>
 
@@ -168,18 +189,51 @@ export function DateResult() {
 
           {plan.items.length > 0 ? (
             <ol className="timeline">
-              {plan.items.map((item, i) => (
-                <ItineraryItemCard
-                  key={item.id}
-                  item={item}
-                  index={i}
-                  count={plan.items.length}
-                  venue={item.venueId ? getVenue(item.venueId) : undefined}
-                  editing={editing}
-                  replacements={editing ? replacementsFor(item.id) : []}
-                  handlers={handlers}
+              {startPlace && firstItem && (
+                <TransitionRow
+                  from={startPlace}
+                  to={placeOf(firstItem)}
+                  mode={edgeMode}
+                  reason={noPlaceReason(firstItem)}
                 />
-              ))}
+              )}
+              {plan.items.map((item, i) => {
+                const leg = plan.transport.legs[i];
+                const next = plan.items[i + 1];
+                return [
+                  <ItineraryItemCard
+                    key={item.id}
+                    item={item}
+                    index={i}
+                    count={plan.items.length}
+                    venue={item.venueId ? getVenue(item.venueId) : undefined}
+                    editing={editing}
+                    transportation={transitFocus ? plan.input.transportation : undefined}
+                    replacements={editing ? replacementsFor(item.id) : []}
+                    handlers={handlers}
+                  />,
+                  leg && next ? (
+                    <TransitionRow
+                      key={leg.key}
+                      from={placeOf(item)}
+                      to={placeOf(next)}
+                      mode={leg.mode}
+                      leg={leg}
+                      reason={noPlaceReason(placeOf(item) ? next : item)}
+                      editable={editing && plan.input.transportation === 'campuran'}
+                      onModeChange={(m) => onLegMode(leg.key, m)}
+                    />
+                  ) : null,
+                ];
+              })}
+              {endPlace && lastItem && (
+                <TransitionRow
+                  from={placeOf(lastItem)}
+                  to={endPlace}
+                  mode={edgeMode}
+                  reason={noPlaceReason(lastItem)}
+                />
+              )}
             </ol>
           ) : null}
 

@@ -15,6 +15,7 @@ import {
   VIBE_OPTIONS,
 } from '../lib/options';
 import { generateItinerary } from '../engine/generator';
+import { isPublicTransport } from '../engine/transport';
 import { validateDateInput as validate, type InputErrors } from '../engine/validation';
 import { citiesOf, plannableVenues } from '../lib/venueFilters';
 import { SAMPLE_VENUES } from '../data/sampleVenues';
@@ -79,7 +80,13 @@ export function CreateDate() {
     }
     const usesSampleVenues = cityPool.length === 0;
     const { plan, issues } = generateItinerary(
-      { ...values, city: values.city.trim(), notes: values.notes.trim() },
+      {
+        ...values,
+        city: values.city.trim(),
+        notes: values.notes.trim(),
+        startLocation: values.startLocation?.trim() || undefined,
+        endLocation: values.endLocation?.trim() || undefined,
+      },
       usesSampleVenues ? (settings.useSampleVenues ? SAMPLE_VENUES : []) : realVenues,
       {
         planId: editing && draft ? draft.id : `plan-${Date.now().toString(36)}`,
@@ -264,6 +271,37 @@ export function CreateDate() {
             value={values.transportation}
             onChange={(v) => set('transportation', v)}
           />
+          {(isPublicTransport(values.transportation) || values.transportation === 'campuran') && (
+            <p className="field-hint field-hint-info">
+              {values.transportation === 'campuran'
+                ? 'Moda bisa berbeda di tiap perpindahan dan diubah di halaman hasil. '
+                : 'Venue dengan akses transit terverifikasi diprioritaskan, dan jumlah perpindahan dibatasi. '}
+              Aplikasi ini tidak menghitung rute, durasi, atau tarif — tiap perpindahan punya tombol rute ke Google Maps.
+            </p>
+          )}
+          <div className="field-row">
+            <div className="field">
+              <label className="field-label" htmlFor="f-startLocation">
+                Titik berangkat <span className="optional">(opsional)</span>
+              </label>
+              <input id="f-startLocation" className="input" maxLength={160} autoComplete="off"
+                placeholder="Misalnya: Stasiun Sudirman" value={values.startLocation ?? ''}
+                aria-invalid={errors.startLocation ? true : undefined}
+                onChange={(e) => set('startLocation', e.target.value)} />
+              {errors.startLocation && <p className="field-error">{errors.startLocation}</p>}
+            </div>
+            <div className="field">
+              <label className="field-label" htmlFor="f-endLocation">
+                Tujuan akhir <span className="optional">(opsional)</span>
+              </label>
+              <input id="f-endLocation" className="input" maxLength={160} autoComplete="off"
+                placeholder="Misalnya: rumah atau stasiun" value={values.endLocation ?? ''}
+                aria-invalid={errors.endLocation ? true : undefined}
+                onChange={(e) => set('endLocation', e.target.value)} />
+              {errors.endLocation && <p className="field-error">{errors.endLocation}</p>}
+            </div>
+          </div>
+          <p className="field-hint">Hanya dipakai untuk membuka rute di Google Maps; tidak disimpan di luar perangkat ini.</p>
           <div className="field">
             <label className="field-label" htmlFor="f-notes">
               Catatan <span className="optional">(opsional)</span>

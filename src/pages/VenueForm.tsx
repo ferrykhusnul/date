@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { MultiChipGroup } from '../components/ChipGroup';
+import { TransitAccessEditor, type TransitRowForm } from '../components/TransitAccessEditor';
 import { CurrencyInput } from '../components/CurrencyInput';
 import { EmptyState } from '../components/EmptyState';
 import { ExternalLink } from '../components/ExternalLink';
@@ -22,9 +23,10 @@ import { newVenueId, useVenues } from '../state/VenueStore';
 import type { Activity, Environment, Venue, VenueStatus, Vibe } from '../types';
 
 /** Form state keeps optional numbers as text so fields can be left blank. */
-interface FormValues extends Omit<Venue, 'latitude' | 'longitude'> {
+interface FormValues extends Omit<Venue, 'latitude' | 'longitude' | 'transitAccess'> {
   latitude: string;
   longitude: string;
+  transitRows: TransitRowForm[];
 }
 
 const BLANK: FormValues = {
@@ -47,17 +49,25 @@ const BLANK: FormValues = {
   description: '',
   verifiedAt: '',
   status: 'active',
-  transitAccess: '',
+  transitRows: [],
+  transitNote: '',
 };
 
 function toForm(v: Venue): FormValues {
   return {
     ...BLANK,
-    ...v,
+    ...(({ transitAccess: _omit, ...rest }) => rest)(v),
     priceUnknown: Boolean(v.priceUnknown),
     district: v.district ?? '',
     verifiedAt: v.verifiedAt ?? '',
-    transitAccess: v.transitAccess ?? '',
+    transitRows: (v.transitAccess ?? []).map((a) => ({
+      stationName: a.stationName,
+      transitType: a.transitType,
+      distanceMeters: a.distanceMeters === undefined ? '' : String(a.distanceMeters),
+      walkingMinutes: a.walkingMinutes === undefined ? '' : String(a.walkingMinutes),
+      verifiedAt: a.verifiedAt ?? '',
+    })),
+    transitNote: v.transitNote ?? '',
     latitude: v.latitude === undefined ? '' : String(v.latitude),
     longitude: v.longitude === undefined ? '' : String(v.longitude),
   };
@@ -65,6 +75,11 @@ function toForm(v: Venue): FormValues {
 
 function parseCoord(text: string): number | undefined {
   const t = text.trim().replace(',', '.');
+  return t === '' ? undefined : Number(t);
+}
+
+function parseWhole(text: string): number | undefined {
+  const t = text.trim();
   return t === '' ? undefined : Number(t);
 }
 
@@ -90,7 +105,16 @@ function toVenue(f: FormValues, id: string): Venue {
     description: f.description.trim(),
     verifiedAt: opt(f.verifiedAt),
     status: f.status,
-    transitAccess: opt(f.transitAccess),
+    transitAccess: f.transitRows.length
+      ? f.transitRows.map((r) => ({
+          stationName: r.stationName.trim(),
+          transitType: r.transitType,
+          distanceMeters: parseWhole(r.distanceMeters),
+          walkingMinutes: parseWhole(r.walkingMinutes),
+          verifiedAt: opt(r.verifiedAt),
+        }))
+      : undefined,
+    transitNote: opt(f.transitNote),
   };
 }
 
@@ -132,7 +156,12 @@ export function VenueForm() {
     setErrors(errs);
     const first = Object.keys(errs)[0];
     if (first) {
-      document.getElementById(`v-${first}`)?.focus();
+      if (first === 'transitRows') {
+        const [row, fields] = Object.entries(errs.transitRows ?? {})[0] ?? [];
+        if (row !== undefined) document.getElementById(`ta-${row}-${Object.keys(fields ?? {})[0]}`)?.focus();
+      } else {
+        document.getElementById(`v-${first}`)?.focus();
+      }
       return;
     }
     saveVenue(venue);
@@ -215,10 +244,13 @@ export function VenueForm() {
               {err('longitude')}
             </div>
           </div>
+          <TransitAccessEditor rows={values.transitRows} errors={errors.transitRows}
+            onChange={(rows) => set('transitRows', rows)} />
+          {err('transitAccess')}
           <div className="field">
-            <label className="field-label" htmlFor="v-transitAccess">Akses transportasi umum <span className="optional">(opsional)</span></label>
-            <input id="v-transitAccess" className="input" placeholder="Misalnya: 5 menit jalan kaki dari stasiun terdekat"
-              value={values.transitAccess} onChange={(e) => set('transitAccess', e.target.value)} />
+            <label className="field-label" htmlFor="v-transitNote">Catatan transit <span className="optional">(opsional)</span></label>
+            <input id="v-transitNote" className="input" maxLength={160} value={values.transitNote}
+              onChange={(e) => set('transitNote', e.target.value)} />
           </div>
           <div className="field">
             <label className="field-label" htmlFor="v-googleMapsUrl">Tautan listing Google Maps</label>

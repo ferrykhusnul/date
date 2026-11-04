@@ -1,6 +1,5 @@
 import type { BudgetSummary } from '../../engine/budget';
 import { formatIDR } from '../../lib/format';
-import { TRANSPORT_OPTIONS, labelOf } from '../../lib/options';
 import type { DatePlan } from '../../types';
 
 export function BudgetCard({ plan, budget }: { plan: DatePlan; budget: BudgetSummary }) {
@@ -28,8 +27,8 @@ export function BudgetCard({ plan, budget }: { plan: DatePlan; budget: BudgetSum
         ))}
         <li>
           <span>
-            Transportasi antar tempat ({labelOf(TRANSPORT_OPTIONS, plan.transport.mode).toLowerCase()},{' '}
-            {plan.transport.legs}× perpindahan)
+            Transportasi antar tempat ({plan.transport.legs.length}× perpindahan
+            {budget.unpricedLegs > 0 ? `, ${budget.unpricedLegs} dengan transportasi umum` : ''})
           </span>
           <span>{formatIDR(budget.transportEstimate)}</span>
         </li>
@@ -76,6 +75,12 @@ export function BudgetCard({ plan, budget }: { plan: DatePlan; budget: BudgetSum
           <dd>{formatIDR(budget.totalMax)}</dd>
         </div>
       </dl>
+      {budget.unpricedLegs > 0 && (
+        <p className="field-hint">
+          Tarif transportasi umum tidak dihitung — aplikasi ini tidak memperkirakan tarif. Cek tarif di Google Maps atau
+          aplikasi operator. Biaya motor/mobil adalah alokasi kasar bensin/parkir.
+        </p>
+      )}
       {!budget.complete && (
         <p className="field-hint">
           * {budget.unknownPriceCount} aktivitas belum punya harga dan tidak dihitung. Isi biayanya lewat mode ubah bila

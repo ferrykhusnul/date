@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
 import { Icon } from '../components/Icon';
 import { MapsLinks } from '../components/MapsLinks';
+import { TransitAccessList } from '../components/TransitInfo';
 import { PageHeader } from '../components/PageHeader';
 import { PriceEstimate } from '../components/PriceEstimate';
 import { SampleBadge, SampleNotice } from '../components/SampleBadge';
@@ -72,6 +73,11 @@ export function VenueDetail() {
         <MapsLinks venue={venue} />
       </section>
 
+      <section className="section">
+        <h2 className="section-title">Akses transportasi umum</h2>
+        <TransitAccessList venue={venue} />
+      </section>
+
       <dl className="detail-list">
         <div>
           <dt>Alamat</dt>
@@ -84,10 +90,10 @@ export function VenueDetail() {
             </span>
           </dd>
         </div>
-        {venue.transitAccess && (
+        {venue.transitNote && (
           <div>
-            <dt>Akses transportasi umum</dt>
-            <dd>{venue.transitAccess}</dd>
+            <dt>Catatan transit</dt>
+            <dd>{venue.transitNote}</dd>
           </div>
         )}
         <div>
