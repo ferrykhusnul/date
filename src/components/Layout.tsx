@@ -14,11 +14,14 @@ const NAV_ITEMS: { to: string; label: string; icon: IconName; end?: boolean }[] 
 ];
 
 export function Layout() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
 
+  // New page: start at the top, or at the #section the link points to.
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
+    const target = hash ? document.getElementById(decodeURIComponent(hash.slice(1))) : null;
+    if (target) target.scrollIntoView();
+    else window.scrollTo(0, 0);
+  }, [pathname, hash]);
 
   return (
     <div className="app-shell">
