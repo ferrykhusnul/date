@@ -1,0 +1,78 @@
+import type { Activity, Environment, Transportation, VenueCategory, Vibe } from '../types';
+
+export interface Option<T extends string | number> {
+  value: T;
+  label: string;
+  hint?: string;
+}
+
+/** City suggestions for the input's autocomplete. Users may type any city. */
+export const CITY_SUGGESTIONS = [
+  'Jakarta',
+  'Bandung',
+  'Yogyakarta',
+  'Surabaya',
+  'Semarang',
+  'Malang',
+  'Denpasar',
+  'Medan',
+  'Makassar',
+];
+
+export const DURATION_OPTIONS: Option<number>[] = [
+  { value: 2, label: '2 jam' },
+  { value: 3, label: '3 jam' },
+  { value: 4, label: '4 jam' },
+  { value: 5, label: '5 jam' },
+  { value: 6, label: '6 jam' },
+];
+
+export const BUDGET_PRESETS = [250_000, 500_000, 1_000_000, 2_000_000];
+
+export const VIBE_OPTIONS: Option<Vibe>[] = [
+  { value: 'romantis', label: 'Romantis', hint: 'Hangat & intim' },
+  { value: 'santai', label: 'Santai', hint: 'Tanpa terburu-buru' },
+  { value: 'petualang', label: 'Petualang', hint: 'Coba hal baru' },
+  { value: 'kreatif', label: 'Kreatif', hint: 'Seni & budaya' },
+  { value: 'elegan', label: 'Elegan', hint: 'Istimewa & rapi' },
+];
+
+export const ACTIVITY_OPTIONS: Option<Activity>[] = [
+  { value: 'makan', label: 'Makan' },
+  { value: 'kopi', label: 'Ngopi' },
+  { value: 'jalan', label: 'Jalan-jalan' },
+  { value: 'galeri', label: 'Museum & Galeri' },
+  { value: 'nonton', label: 'Nonton' },
+  { value: 'belanja', label: 'Belanja' },
+  { value: 'alam', label: 'Alam Terbuka' },
+  { value: 'hiburan', label: 'Hiburan' },
+];
+
+export const TRANSPORT_OPTIONS: Option<Transportation>[] = [
+  { value: 'jalan-kaki', label: 'Jalan kaki' },
+  { value: 'motor', label: 'Motor' },
+  { value: 'mobil', label: 'Mobil pribadi' },
+  { value: 'umum', label: 'Transportasi umum' },
+  { value: 'taksi-online', label: 'Taksi online' },
+];
+
+export const ENVIRONMENT_OPTIONS: Option<Environment>[] = [
+  { value: 'indoor', label: 'Dalam ruangan' },
+  { value: 'outdoor', label: 'Luar ruangan' },
+  { value: 'campuran', label: 'Campuran' },
+];
+
+export const CATEGORY_LABELS: Record<VenueCategory, string> = {
+  restoran: 'Restoran',
+  kafe: 'Kafe',
+  taman: 'Taman Kota',
+  galeri: 'Museum & Galeri',
+  bioskop: 'Bioskop',
+  'pusat-belanja': 'Pusat Belanja',
+  alam: 'Wisata Alam',
+  hiburan: 'Hiburan',
+};
+
+export function labelOf<T extends string | number>(options: Option<T>[], value: T): string {
+  return options.find((o) => o.value === value)?.label ?? String(value);
+}
