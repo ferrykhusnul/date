@@ -37,6 +37,10 @@ export function BudgetCard({ plan, budget }: { plan: DatePlan; budget: BudgetSum
         </div>
       </dl>
 
+      {!budget.complete && (
+        <p className="field-hint">* {budget.unknownPriceCount} tempat belum ada harganya, jadi totalnya bisa lebih.</p>
+      )}
+
       <details className="budget-details">
         <summary>Rincian biaya</summary>
         <ul className="cost-list">
@@ -56,7 +60,6 @@ export function BudgetCard({ plan, budget }: { plan: DatePlan; budget: BudgetSum
         <p className="field-hint">
           Buat berdua · rentang {formatIDR(budget.totalMin)} – {formatIDR(budget.totalMax)}. Semua angka perkiraan.
           {budget.unpricedLegs > 0 && ' Tarif transum nggak dihitung — cek di Google Maps.'}
-          {!budget.complete && ` * ${budget.unknownPriceCount} tempat belum ada harganya.`}
         </p>
       </details>
     </div>

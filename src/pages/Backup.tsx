@@ -26,11 +26,11 @@ type Step =
 
 function describe(s: SectionSummary, noun: string): string[] {
   const out: string[] = [];
-  if (s.added) out.push(`${s.added} ${noun} baru ditambahkan`);
-  if (s.replaced) out.push(`${s.replaced} ${noun} diganti versi cadangan`);
-  if (s.keptLocal) out.push(`${s.keptLocal} ${noun} bentrok — versi di perangkat dipertahankan`);
-  if (s.identical) out.push(`${s.identical} ${noun} sudah sama`);
-  if (s.removed) out.push(`${s.removed} ${noun} di perangkat akan dihapus`);
+  if (s.added) out.push(`${s.added} ${noun} baru ditambah`);
+  if (s.replaced) out.push(`${s.replaced} ${noun} diganti versi file`);
+  if (s.keptLocal) out.push(`${s.keptLocal} ${noun} beda — versi di HP ini dipertahankan`);
+  if (s.identical) out.push(`${s.identical} ${noun} udah sama`);
+  if (s.removed) out.push(`${s.removed} ${noun} di HP ini bakal dihapus`);
   return out;
 }
 
@@ -53,7 +53,7 @@ export function Backup() {
   const exportAll = () => {
     downloadJson(serializeBackup(buildBackup(data)), backupFileName());
     setDownloadedCurrent(true);
-    setExportStatus(`Cadangan diunduh: ${data.plans.length} rencana, ${data.venues.length} venue lokal, pengaturan dan preferensi.`);
+    setExportStatus(`Kesimpan ♡ ${data.plans.length} date & ${data.venues.length} tempat.`);
   };
 
   const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -101,7 +101,7 @@ export function Backup() {
       kind: 'done',
       ok,
       message: ok
-        ? `Impor selesai: ${preview.next.plans.length} rencana dan ${preview.next.venues.length} venue lokal sekarang tersimpan di perangkat ini.`
+        ? `Impor selesai ♡ Sekarang ada ${preview.next.plans.length} date & ${preview.next.venues.length} tempat.`
         : 'Impor diterapkan, tetapi sebagian data tidak bisa disimpan ke peramban. Lihat peringatan penyimpanan dan ekspor cadangan sesegera mungkin.',
     });
   };
@@ -136,8 +136,7 @@ export function Backup() {
       <section className="section backup-card">
         <h2 className="section-title">Simpan ke file</h2>
         <p className="muted">
-          {data.plans.length} rencana, {data.venues.length} venue lokal, pengaturan, dan preferensi akan disimpan ke satu file
-          JSON. Draf yang belum disimpan tidak ikut.
+          {data.plans.length} date, {data.venues.length} tempat & setelan, jadi satu file. Draf belum ikut.
         </p>
         <button type="button" className="button button-primary" onClick={exportAll}>
           <Icon name="download" size={18} /> Unduh cadangan
@@ -151,8 +150,7 @@ export function Backup() {
         {step.kind === 'pick' && (
           <>
             <p className="muted">
-              Pilih file cadangan Date Planner (.json). Isinya diperiksa dan ditampilkan dulu — tidak ada yang berubah sebelum
-              kamu mengonfirmasi.
+              Pilih file cadangan (.json). Isinya dicek & ditunjukin dulu, nggak ada yang berubah sebelum kamu setuju.
             </p>
             <input ref={fileInput} id="backup-file" type="file" accept="application/json,.json" className="sr-only" onChange={onFile} />
             <label htmlFor="backup-file" className="button button-ghost file-button">
@@ -167,9 +165,9 @@ export function Backup() {
           <div className="import-preview">
             <dl className="detail-list compact">
               <div><dt>File</dt><dd>{step.fileName}</dd></div>
-              <div><dt>Diekspor</dt><dd>{step.backup.exportedAt ? formatDateTimeShort(step.backup.exportedAt) : 'Tidak diketahui'}</dd></div>
-              <div><dt>Isi cadangan</dt><dd>{step.backup.plans.length} rencana · {step.backup.venues.length} venue{step.backup.settings ? ' · pengaturan' : ''}{step.backup.preferences ? ' · preferensi' : ''}</dd></div>
-              <div><dt>Data di perangkat</dt><dd>{data.plans.length} rencana · {data.venues.length} venue</dd></div>
+              <div><dt>Dibuat</dt><dd>{step.backup.exportedAt ? formatDateTimeShort(step.backup.exportedAt) : 'Tidak diketahui'}</dd></div>
+              <div><dt>Isi file</dt><dd>{step.backup.plans.length} date · {step.backup.venues.length} tempat{step.backup.settings || step.backup.preferences ? ' · setelan' : ''}</dd></div>
+              <div><dt>Di HP ini</dt><dd>{data.plans.length} date · {data.venues.length} tempat</dd></div>
             </dl>
 
             {step.warnings.length > 0 && (
@@ -180,12 +178,12 @@ export function Backup() {
 
             {step.backup.plans.length > 0 && (
               <details className="alternatives">
-                <summary>Lihat rencana di cadangan ({step.backup.plans.length})</summary>
+                <summary>Lihat date di file ({step.backup.plans.length})</summary>
                 <ul>
                   {step.backup.plans.map((p) => (
                     <li key={p.id}>
                       <strong>{p.name || p.title || p.input.city}</strong>
-                      <span className="muted small"> · {p.input.date} · {p.items.length} aktivitas{data.plans.some((l) => l.id === p.id) ? ' · sudah ada di perangkat' : ''}</span>
+                      <span className="muted small"> · {p.input.date} · {p.items.length} aktivitas{data.plans.some((l) => l.id === p.id) ? ' · udah ada' : ''}</span>
                     </li>
                   ))}
                 </ul>
@@ -193,48 +191,48 @@ export function Backup() {
             )}
 
             <fieldset className="field">
-              <legend className="field-label">Cara impor</legend>
+              <legend className="field-label">Mau gimana?</legend>
               <label className="choice">
                 <input type="radio" name="mode" checked={opts.mode === 'merge'} onChange={() => { setOpts({ ...opts, mode: 'merge' }); setAcknowledged(false); }} />
-                <span><strong>Gabungkan</strong> — tambahkan data dari cadangan, data di perangkat tetap ada.</span>
+                <span><strong>Gabungkan</strong> — tambahin isi file, yang di HP tetap ada.</span>
               </label>
               <label className="choice">
                 <input type="radio" name="mode" checked={opts.mode === 'replace'} onChange={() => { setOpts({ ...opts, mode: 'replace' }); setAcknowledged(false); }} />
-                <span><strong>Ganti semua</strong> — data di perangkat diganti seluruhnya dengan isi cadangan.</span>
+                <span><strong>Ganti semua</strong> — isi HP ini diganti isi file.</span>
               </label>
             </fieldset>
 
             {opts.mode === 'merge' && (
               <>
                 <fieldset className="field">
-                  <legend className="field-label">Jika data yang sama berbeda isinya</legend>
+                  <legend className="field-label">Kalau ada yang beda</legend>
                   <label className="choice">
                     <input type="radio" name="conflict" checked={opts.conflict === 'keep-local'} onChange={() => { setOpts({ ...opts, conflict: 'keep-local' }); setAcknowledged(false); }} />
-                    <span>Pertahankan versi di perangkat</span>
+                    <span>Pakai yang di HP ini</span>
                   </label>
                   <label className="choice">
                     <input type="radio" name="conflict" checked={opts.conflict === 'use-backup'} onChange={() => { setOpts({ ...opts, conflict: 'use-backup' }); setAcknowledged(false); }} />
-                    <span>Pakai versi dari cadangan</span>
+                    <span>Pakai yang dari file</span>
                   </label>
                 </fieldset>
                 {(step.backup.settings || step.backup.preferences) && (
                   <label className="switch">
                     <input type="checkbox" checked={opts.includeSettings} onChange={(e) => { setOpts({ ...opts, includeSettings: e.target.checked }); setAcknowledged(false); }} />
-                    <span>Juga pakai pengaturan dan preferensi dari cadangan</span>
+                    <span>Setelan juga pakai dari file</span>
                   </label>
                 )}
               </>
             )}
 
             <div className="import-summary">
-              <p className="eyebrow">Yang akan terjadi</p>
+              <p className="eyebrow">Yang bakal terjadi</p>
               <ul>
-                {[...describe(preview.plans, 'rencana'), ...describe(preview.venues, 'venue')].map((l) => <li key={l}>{l}</li>)}
-                {preview.settingsChanged && <li>Pengaturan diganti dengan versi cadangan</li>}
-                {preview.preferencesChanged && <li>Preferensi diganti dengan versi cadangan</li>}
-                {!preview.destructive && preview.plans.added + preview.venues.added === 0 && !preview.settingsChanged && <li>Tidak ada perubahan.</li>}
+                {[...describe(preview.plans, 'date'), ...describe(preview.venues, 'tempat')].map((l) => <li key={l}>{l}</li>)}
+                {preview.settingsChanged && <li>Setelan diganti versi file</li>}
+                {preview.preferencesChanged && <li>Jawaban favorit diganti versi file</li>}
+                {!preview.destructive && preview.plans.added + preview.venues.added === 0 && !preview.settingsChanged && <li>Nggak ada yang berubah.</li>}
               </ul>
-              <p className="result-after">Setelah impor: {preview.next.plans.length} rencana · {preview.next.venues.length} venue lokal.</p>
+              <p className="result-after">Nanti jadi: {preview.next.plans.length} date · {preview.next.venues.length} tempat.</p>
             </div>
 
             {preview.destructive && (
@@ -248,7 +246,7 @@ export function Backup() {
                 </button>
                 <label className="switch">
                   <input type="checkbox" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />
-                  <span>Saya mengerti data di perangkat akan diganti atau dihapus seperti di atas.</span>
+                  <span>Aku ngerti, data di HP ini bakal diganti/dihapus kayak di atas.</span>
                 </label>
               </div>
             )}

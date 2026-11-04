@@ -31,7 +31,7 @@ const MAX_PRICE = 100_000_000;
 
 export function validateVenue(v: Venue): VenueErrors {
   const e: VenueErrors = {};
-  if (!v.name.trim()) e.name = 'Nama venue wajib diisi.';
+  if (!v.name.trim()) e.name = 'Nama tempat wajib diisi.';
   if (!CATEGORY_OPTIONS.some((o) => o.value === v.category)) e.category = 'Pilih kategori.';
   if (!v.address.trim()) e.address = 'Alamat wajib diisi.';
   if (!v.city.trim()) e.city = 'Kota wajib diisi.';
@@ -54,9 +54,9 @@ export function validateVenue(v: Venue): VenueErrors {
     e.longitude = 'Bujur harus antara -180 dan 180.';
 
   if (!v.isSample) {
-    if (!v.googleMapsUrl.trim()) e.googleMapsUrl = 'Tautan listing Google Maps wajib diisi.';
+    if (!v.googleMapsUrl.trim()) e.googleMapsUrl = 'Link Google Maps wajib diisi.';
     else if (!isGoogleMapsUrl(v.googleMapsUrl))
-      e.googleMapsUrl = 'Gunakan tautan https Google Maps (google.com/maps/… atau maps.app.goo.gl/…).';
+      e.googleMapsUrl = 'Pakai link Google Maps (google.com/maps/… atau maps.app.goo.gl/…).';
   }
   if (v.verifiedAt && !DATE_RE.test(v.verifiedAt)) e.verifiedAt = 'Format tanggal tidak valid.';
   const rows = v.transitAccess ?? [];

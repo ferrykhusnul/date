@@ -56,10 +56,10 @@ test('replace import needs acknowledgement and can be undone', async ({ page, co
   await page.goto('/cadangan');
   await page.locator('#backup-file').setInputFiles(file);
   await page.getByLabel(/Ganti semua/).check();
-  await expect(page.locator('.import-summary')).toContainText('1 rencana di perangkat akan dihapus');
+  await expect(page.locator('.import-summary')).toContainText('1 date di HP ini bakal dihapus');
   const apply = page.getByRole('button', { name: 'Ganti semua data' });
   await expect(apply).toBeDisabled();
-  await page.getByLabel(/Saya mengerti/).check();
+  await page.getByLabel(/Aku ngerti/).check();
   await apply.click();
   await expect(page.getByText(/Impor selesai/)).toBeVisible();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('date-planner.plans')!).data.length)).toBe(0);

@@ -8,14 +8,14 @@ import { PageHeader } from '../components/PageHeader';
 import { PriceEstimate } from '../components/PriceEstimate';
 import { SampleBadge, SampleNotice } from '../components/SampleBadge';
 import { formatDateLong, formatDuration } from '../lib/format';
-import { ACTIVITY_OPTIONS, ENVIRONMENT_OPTIONS, VIBE_OPTIONS, categoryLabel, labelOf } from '../lib/options';
+import { categoryLabel } from '../lib/options';
+import { activityLabel, environmentLabel, moodLabel } from '../lib/uiLabels';
 import { useVenues } from '../state/VenueStore';
-import type { Activity, Vibe } from '../types';
 
 const SOURCE_LABEL = {
-  curated: 'Dataset terkurasi',
-  local: 'Ditambahkan di perangkat ini',
-  sample: 'Data sampel',
+  curated: 'Bawaan',
+  local: 'Tambahan kamu',
+  sample: 'Contoh',
 } as const;
 
 export function VenueDetail() {
@@ -42,8 +42,8 @@ export function VenueDetail() {
 
   const onRemove = () => {
     const msg = overridden
-      ? `Kembalikan "${venue.name}" ke versi dataset terkurasi?`
-      : `Hapus "${venue.name}" dari perangkat ini?`;
+      ? `Balikin "${venue.name}" ke versi awal?`
+      : `Hapus "${venue.name}"?`;
     if (!window.confirm(msg)) return;
     removeLocal(venue.id);
     if (!overridden) navigate('/venue', { replace: true });
@@ -60,12 +60,12 @@ export function VenueDetail() {
         <span className={venue.status === 'active' ? 'verified-badge' : 'status-badge'}>
           {venue.status === 'active' ? 'Aktif' : 'Nonaktif'}
         </span>
-        {source && <span className="tag">{SOURCE_LABEL[source]}{overridden ? ' · diubah lokal' : ''}</span>}
+        {source && <span className="tag">{SOURCE_LABEL[source]}{overridden ? ' · diubah' : ''}</span>}
       </div>
 
       {venue.isSample && (
         <SampleNotice>
-          Venue ini adalah data sampel. Nama, alamat, deskripsi, dan harga bukan informasi tempat nyata.
+          Ini tempat contoh, bukan tempat asli.
         </SampleNotice>
       )}
 
@@ -100,27 +100,27 @@ export function VenueDetail() {
           </div>
         )}
         <div>
-          <dt>Kategori &amp; lingkungan</dt>
-          <dd>{categoryLabel(venue.category)} · {labelOf(ENVIRONMENT_OPTIONS, venue.environment)}</dd>
+          <dt>Jenis tempat</dt>
+          <dd>{categoryLabel(venue.category)} · {environmentLabel(venue.environment)}</dd>
         </div>
         <div>
-          <dt>Harga (perkiraan)</dt>
+          <dt>Harga kira-kira</dt>
           <dd><PriceEstimate min={venue.priceMin} max={venue.priceMax} unknown={venue.priceUnknown} /></dd>
         </div>
         <div>
-          <dt>Lama kunjungan biasa</dt>
+          <dt>Biasanya berapa lama</dt>
           <dd>{formatDuration(venue.visitDurationMinutes)}</dd>
         </div>
         <div>
           <dt>Aktivitas</dt>
           <dd className="chips-static">
-            {venue.activities.map((a) => <span key={a} className="tag">{labelOf(ACTIVITY_OPTIONS, a as Activity)}</span>)}
+            {venue.activities.map((a) => <span key={a} className="tag">{activityLabel(a)}</span>)}
           </dd>
         </div>
         <div>
-          <dt>Vibe</dt>
+          <dt>Vibes</dt>
           <dd className="chips-static">
-            {venue.vibes.map((v) => <span key={v} className="tag">{labelOf(VIBE_OPTIONS, v as Vibe)}</span>)}
+            {venue.vibes.map((v) => <span key={v} className="tag">{moodLabel(v)}</span>)}
           </dd>
         </div>
         {venue.latitude !== undefined && venue.longitude !== undefined && (
@@ -130,17 +130,17 @@ export function VenueDetail() {
           </div>
         )}
         <div>
-          <dt>Verifikasi</dt>
-          <dd>{venue.verifiedAt ? `Dicek ${formatDateLong(venue.verifiedAt)}` : 'Belum diverifikasi'}</dd>
+          <dt>Dicek</dt>
+          <dd>{venue.verifiedAt ? formatDateLong(venue.verifiedAt) : 'Belum dicek'}</dd>
         </div>
       </dl>
 
       {!venue.isSample && (
         <section className="section">
-          <h2 className="section-title">Kelola</h2>
+          <h2 className="section-title">Atur tempat</h2>
           <div className="manage-actions">
             <Link to={`/venue/${encodeURIComponent(venue.id)}/ubah`} className="button button-primary">
-              <Icon name="edit" size={18} /> Ubah venue
+              <Icon name="edit" size={18} /> Ubah
             </Link>
             <button type="button" className="button button-ghost"
               onClick={() => setStatus(venue.id, venue.status === 'active' ? 'inactive' : 'active')}>
@@ -148,12 +148,12 @@ export function VenueDetail() {
             </button>
             {(source === 'local' || overridden) && (
               <button type="button" className="button button-danger-ghost" onClick={onRemove}>
-                <Icon name="trash" size={18} /> {overridden ? 'Kembalikan versi terkurasi' : 'Hapus venue'}
+                <Icon name="trash" size={18} /> {overridden ? 'Balikin versi awal' : 'Hapus'}
               </button>
             )}
           </div>
           <p className="field-hint">
-            Venue nonaktif tetap tersimpan, tetapi tidak dipakai saat menyusun rencana baru.
+            Tempat nonaktif tetap disimpan, tapi nggak dipakai buat ide date.
           </p>
         </section>
       )}

@@ -36,11 +36,10 @@ export function TransitAccessEditor({
   return (
     <fieldset className="field transit-editor">
       <legend className="field-label">
-        Akses transportasi umum <span className="optional">(opsional)</span>
+        Dekat transum <span className="optional">(opsional)</span>
       </legend>
       <p className="field-hint">
-        Isi hanya stasiun/halte yang sudah kamu cek. Jarak dan waktu jalan kaki baru ditampilkan setelah diberi tanggal
-        verifikasi. Kosongkan bila belum tahu — venue tetap bisa dipakai.
+        Isi yang udah kamu cek aja. Jarak jalan kaki baru tampil kalau ada tanggal ceknya.
       </p>
 
       {rows.map((row, i) => {
@@ -81,7 +80,7 @@ export function TransitAccessEditor({
               </div>
             </div>
             <div className="field">
-              <label className="field-label" htmlFor={id('verifiedAt')}>Diverifikasi pada</label>
+              <label className="field-label" htmlFor={id('verifiedAt')}>Kapan dicek</label>
               <div className="input-with-action">
                 <input id={id('verifiedAt')} className="input" type="date" max={todayISO()} value={row.verifiedAt}
                   aria-invalid={e.verifiedAt ? true : undefined}

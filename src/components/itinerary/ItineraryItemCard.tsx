@@ -58,6 +58,9 @@ export function ItineraryItemCard({
   const realVenue = venue && !venue.isSample ? venue : undefined;
   const cost = !item.priceKnown ? 'Harga belum tahu' : item.costEstimate === 0 ? 'Gratis' : `± ${shortIDR(item.costEstimate)}`;
   const alternatives = item.alternatives.filter((a) => replacements.some((r) => r.venue.id === a.venueId));
+  // Station details are listed below, so the engine's "Akses: …" notes would repeat them.
+  const hasStations = Boolean(transportation && venue?.transitAccess?.length);
+  const notes = item.notes.filter((n) => !(hasStations && n.startsWith('Akses: ')));
 
   return (
     <li className="timeline-item">
@@ -146,7 +149,7 @@ export function ItineraryItemCard({
             </ul>
           )}
 
-          {!editing && (item.reasons.length > 0 || item.notes.length > 0 || item.score || transportation) && (
+          {!editing && (item.reasons.length > 0 || notes.length > 0 || item.score || hasStations) && (
             <details className="why">
               <summary>Kenapa ini?</summary>
               {item.reasons.length > 0 && (
@@ -154,12 +157,14 @@ export function ItineraryItemCard({
                   {item.reasons.map((r) => <li key={r}>{r}</li>)}
                 </ul>
               )}
-              {item.notes.length > 0 && (
+              {notes.length > 0 && (
                 <ul className="item-notes">
-                  {item.notes.map((n) => <li key={n}>{n}</li>)}
+                  {notes.map((n) => <li key={n}>{n}</li>)}
                 </ul>
               )}
-              {transportation && venue && item.kind === 'venue' && <TransitAccessList venue={venue} mode={transportation} />}
+              {transportation && venue && item.kind === 'venue' && (venue.transitAccess?.length ?? 0) > 0 && (
+                <TransitAccessList venue={venue} mode={transportation} />
+              )}
               {item.score && (
                 <div className="score-details">
                   <p className="score-title">Skor {item.score.rank}/100</p>
@@ -180,7 +185,7 @@ export function ItineraryItemCard({
                     )}
                   </ul>
                   {item.score.transport !== undefined && (
-                    <p className="field-hint">Peringkat = 75% kecocokan ({item.score.total}) + 25% transportasi.</p>
+                    <p className="field-hint">75% cocok ({item.score.total}) + 25% transportasi.</p>
                   )}
                 </div>
               )}

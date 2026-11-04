@@ -50,9 +50,12 @@ export function DateResult() {
   const alreadySaved = plan ? Boolean(getSavedPlan(plan.id)) : false;
 
   const budget = useMemo(() => (plan ? computeBudget(plan) : null), [plan]);
-  // The budget card already explains that transit fares aren't counted.
+  // The budget card already explains uncounted transit fares and missing prices.
   const liveIssues = useMemo(
-    () => (plan ? validatePlan(plan, getVenue).filter((i) => i.code !== 'TRANSIT_FARE_NOT_ESTIMATED') : []),
+    () =>
+      plan
+        ? validatePlan(plan, getVenue).filter((i) => i.code !== 'TRANSIT_FARE_NOT_ESTIMATED' && i.code !== 'MISSING_PRICE')
+        : [],
     [plan, getVenue],
   );
 

@@ -110,8 +110,8 @@ test('complete user flow', async ({ page, context, consoleErrors }, testInfo) =>
   await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('date-planner')).forEach((k) => localStorage.removeItem(k)));
   await page.reload();
   await page.locator('#backup-file').setInputFiles(backupPath);
-  await expect(page.locator('.import-summary')).toContainText('2 rencana baru ditambahkan');
-  await expect(page.locator('.import-summary')).toContainText('4 venue baru ditambahkan');
+  await expect(page.locator('.import-summary')).toContainText('2 date baru ditambah');
+  await expect(page.locator('.import-summary')).toContainText('4 tempat baru ditambah');
   await page.getByRole('button', { name: 'Gabungkan data' }).click();
   await expect(page.getByText(/Impor selesai/)).toBeVisible();
   await page.reload();

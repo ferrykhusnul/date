@@ -99,3 +99,15 @@ export function shortIDR(n: number): string {
   if (n >= 1_000) return `Rp${Math.round(n / 1000)}rb`;
   return `Rp${n}`;
 }
+
+/** The casual labels as plain {value, label} options (same stored values as the engine). */
+export const UI_MOOD_OPTIONS = MOODS.map(({ value, label }) => ({ value, label }));
+export const UI_ACTIVITY_OPTIONS = ACTIVITIES_UI.map(({ value, label }) => ({ value, label }));
+export const UI_ENVIRONMENT_OPTIONS = [
+  { value: 'indoor' as Environment, label: 'Indoor' },
+  { value: 'outdoor' as Environment, label: 'Outdoor' },
+  { value: 'mixed' as Environment, label: 'Indoor & outdoor' },
+];
+export const activityLabel = (a: string) => ACTIVITIES_UI.find((x) => x.value === a)?.label ?? a;
+export const moodLabel = (v: string) => MOODS.find((x) => x.value === v)?.label ?? v;
+export const environmentLabel = (e: string) => UI_ENVIRONMENT_OPTIONS.find((x) => x.value === e)?.label ?? e;

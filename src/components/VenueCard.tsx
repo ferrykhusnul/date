@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { ACTIVITY_OPTIONS, ENVIRONMENT_OPTIONS, categoryLabel, labelOf } from '../lib/options';
-import type { Activity, Venue } from '../types';
+import { categoryLabel } from '../lib/options';
+import { activityLabel, environmentLabel } from '../lib/uiLabels';
+import type { Venue } from '../types';
 import { Icon } from './Icon';
 import { MapsLinks } from './MapsLinks';
 import { PriceEstimate } from './PriceEstimate';
@@ -15,7 +16,7 @@ export function VenueCard({ venue }: { venue: Venue }) {
         <VenueArt category={venue.category} size="md" className="tile-art" />
         <div className="venue-card-top">
           <span className="venue-category">
-            {categoryLabel(venue.category)} · {labelOf(ENVIRONMENT_OPTIONS, venue.environment)}
+            {categoryLabel(venue.category)} · {environmentLabel(venue.environment)}
           </span>
           <span className="badge-row">
             {venue.isSample && <SampleBadge label="Contoh" />}
@@ -35,7 +36,7 @@ export function VenueCard({ venue }: { venue: Venue }) {
           <TransitBadge venue={venue} />
         </div>
         <p className="venue-tile-tags">
-          {venue.activities.map((a) => labelOf(ACTIVITY_OPTIONS, a as Activity)).join(' · ')}
+          {venue.activities.map(activityLabel).join(' · ')}
         </p>
         <div className="venue-card-foot">
           <PriceEstimate min={venue.priceMin} max={venue.priceMax} unknown={venue.priceUnknown} />

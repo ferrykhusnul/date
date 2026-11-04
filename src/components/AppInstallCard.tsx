@@ -31,7 +31,7 @@ export function AppInstallCard() {
 
   const onInstall = async () => {
     const r = await promptInstall();
-    setStatus(r === 'accepted' ? 'Date Planner sedang dipasang.' : r === 'dismissed' ? 'Pemasangan dibatalkan.' : 'Peramban tidak menawarkan pemasangan saat ini.');
+    setStatus(r === 'accepted' ? 'Lagi dipasang ♡' : r === 'dismissed' ? 'Nggak jadi dipasang.' : 'Browser-nya belum nawarin pasang sekarang.');
   };
 
   return (
@@ -65,15 +65,14 @@ export function AppInstallCard() {
       <div className="privacy-note">
         <p className="eyebrow">Tetap jalan tanpa internet</p>
         <ul>
-          <li>Membuka aplikasi dan semua halamannya</li>
-          <li>Rencana tersimpan, draf, dan pengaturan</li>
-          <li>Venue lokal dan dataset venue bawaan</li>
-          <li>Menyusun rencana baru dan menghitung anggaran</li>
-          <li>Ekspor dan impor cadangan</li>
+          <li>Buka aplikasi & semua halamannya</li>
+          <li>Date tersimpan & setelan</li>
+          <li>Daftar tempat</li>
+          <li>Bikin date baru & hitung budget</li>
+          <li>Simpan & pulihkan cadangan</li>
         </ul>
         <p>
-          Tautan Google Maps (pencarian, rute, listing) butuh internet dan tidak disimpan untuk offline. Aplikasi ini juga tidak
-          menyimpan gambar atau konten dari situs lain.
+          Google Maps tetap butuh internet.
         </p>
       </div>
     </section>

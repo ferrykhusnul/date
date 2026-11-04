@@ -6,12 +6,10 @@ import { PageHeader } from '../components/PageHeader';
 import { VenueCard } from '../components/VenueCard';
 import { formatIDR } from '../lib/format';
 import {
-  ACTIVITY_OPTIONS,
   CATEGORY_OPTIONS,
-  ENVIRONMENT_OPTIONS,
   TRANSIT_TYPE_OPTIONS,
-  VIBE_OPTIONS,
 } from '../lib/options';
+import { UI_ACTIVITY_OPTIONS, UI_ENVIRONMENT_OPTIONS, UI_MOOD_OPTIONS } from '../lib/uiLabels';
 import { EMPTY_FILTER, citiesOf, filterVenues, type VenueFilter } from '../lib/venueFilters';
 import { useVenues } from '../state/VenueStore';
 import type { Environment, VenueStatus } from '../types';
@@ -54,7 +52,7 @@ export function VenueList() {
       <details className="filter-panel" open={activeFilters > 0 || undefined}>
         <summary>
           Filter{activeFilters > 0 ? ` (${activeFilters})` : ''}
-          <span className="muted small">{results.length} venue</span>
+          <span className="muted small">{results.length} tempat</span>
         </summary>
         <div className="filter-grid">
           <div className="field filter-search">
@@ -65,7 +63,7 @@ export function VenueList() {
               id="vf-q"
               className="input"
               type="search"
-              placeholder="Nama, alamat, kecamatan, stasiun…"
+              placeholder="Nama, alamat, stasiun…"
               value={filter.query}
               onChange={(e) => set('query', e.target.value)}
             />
@@ -75,20 +73,20 @@ export function VenueList() {
           <FilterSelect id="vf-cat" label="Kategori" value={filter.category} onChange={(v) => set('category', v)}
             options={CATEGORY_OPTIONS} />
           <FilterSelect id="vf-act" label="Aktivitas" value={filter.activity} onChange={(v) => set('activity', v)}
-            options={ACTIVITY_OPTIONS} />
-          <FilterSelect id="vf-vibe" label="Vibe" value={filter.vibe} onChange={(v) => set('vibe', v)}
-            options={VIBE_OPTIONS} />
-          <FilterSelect id="vf-env" label="Lingkungan" value={filter.environment}
-            onChange={(v) => set('environment', v as Environment | '')} options={ENVIRONMENT_OPTIONS} />
-          <FilterSelect id="vf-price" label="Harga mulai maks. /orang" value={filter.maxPrice ? String(filter.maxPrice) : ''}
+            options={UI_ACTIVITY_OPTIONS} />
+          <FilterSelect id="vf-vibe" label="Vibes" value={filter.vibe} onChange={(v) => set('vibe', v)}
+            options={UI_MOOD_OPTIONS} />
+          <FilterSelect id="vf-env" label="Tempatnya" value={filter.environment}
+            onChange={(v) => set('environment', v as Environment | '')} options={UI_ENVIRONMENT_OPTIONS} />
+          <FilterSelect id="vf-price" label="Harga maks. /orang" value={filter.maxPrice ? String(filter.maxPrice) : ''}
             onChange={(v) => set('maxPrice', Number(v) || 0)}
             options={PRICE_LIMITS.map((p) => ({ value: String(p), label: `≤ ${formatIDR(p)}` }))} />
-          <FilterSelect id="vf-transit" label="Akses transit" value={filter.transit}
+          <FilterSelect id="vf-transit" label="Transum" value={filter.transit}
             onChange={(v) => set('transit', v as VenueFilter['transit'])}
             options={[
-              { value: 'any', label: 'Ada data transit' },
-              { value: 'verified', label: 'Transit terverifikasi' },
-              { value: 'unknown', label: 'Belum diketahui' },
+              { value: 'any', label: 'Dekat transum' },
+              { value: 'verified', label: 'Udah dicek' },
+              { value: 'unknown', label: 'Belum tahu' },
               ...TRANSIT_TYPE_OPTIONS,
             ]} />
           <div className="field">

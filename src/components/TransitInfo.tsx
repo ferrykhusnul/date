@@ -9,7 +9,7 @@ import { Icon } from './Icon';
 /** Compact badge: best known station for the chosen mode, or "unknown". */
 export function TransitBadge({ venue, mode }: { venue: Venue; mode?: Transportation }) {
   const list = venue.transitAccess ?? [];
-  if (!list.length) return <span className="transit-badge is-unknown">Transit belum diketahui</span>;
+  if (!list.length) return <span className="transit-badge is-unknown">Transum belum tahu</span>;
   const best = mode ? (transitAccessScore(venue, mode).access ?? list[0]) : list[0];
   return (
     <span className={`transit-badge${best.verifiedAt ? ' is-verified' : ''}`} title={`${transitTypeLabel(best.transitType)} — ${best.stationName}`}>
@@ -23,11 +23,11 @@ export function TransitBadge({ venue, mode }: { venue: Venue; mode?: Transportat
 
 /** Walking info appears only when a person verified the record. */
 export function walkingText(a: TransitAccess): string {
-  if (!a.verifiedAt) return 'Jarak & waktu jalan kaki belum diverifikasi';
+  if (!a.verifiedAt) return 'Jarak jalan kakinya belum dicek';
   const parts: string[] = [];
   if (typeof a.distanceMeters === 'number') parts.push(`${a.distanceMeters.toLocaleString('id-ID')} m`);
   if (typeof a.walkingMinutes === 'number') parts.push(`±${a.walkingMinutes} menit jalan kaki`);
-  return parts.length ? `${parts.join(' · ')} (terverifikasi ${formatDateShort(a.verifiedAt)})` : `Stasiun terverifikasi ${formatDateShort(a.verifiedAt)}; jarak belum dicatat`;
+  return parts.length ? `${parts.join(' · ')} (dicek ${formatDateShort(a.verifiedAt)})` : `Dicek ${formatDateShort(a.verifiedAt)}, jaraknya belum dicatat`;
 }
 
 /** Full list of known stations with walking routes to the venue. */
@@ -44,7 +44,7 @@ export function TransitAccessList({
   if (!list.length) {
     return (
       <p className="transit-unknown">
-        Info akses transit belum diketahui untuk venue ini. Cek rute langsung di Google Maps.
+        Belum tahu dekat transum apa. Cek rutenya di Google Maps ya.
       </p>
     );
   }

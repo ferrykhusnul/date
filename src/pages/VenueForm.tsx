@@ -10,14 +10,12 @@ import { PageHeader } from '../components/PageHeader';
 import { todayISO } from '../lib/format';
 import { buildSearchUrl } from '../lib/maps';
 import {
-  ACTIVITY_OPTIONS,
   CATEGORY_OPTIONS,
   CITY_SUGGESTIONS,
-  ENVIRONMENT_OPTIONS,
   STATUS_OPTIONS,
-  VIBE_OPTIONS,
 } from '../lib/options';
 import { citiesOf } from '../lib/venueFilters';
+import { UI_ACTIVITY_OPTIONS, UI_ENVIRONMENT_OPTIONS, UI_MOOD_OPTIONS } from '../lib/uiLabels';
 import { validateVenue, type VenueErrors } from '../lib/venueValidation';
 import { newVenueId, useVenues } from '../state/VenueStore';
 import type { Activity, Environment, Venue, VenueStatus, Vibe } from '../types';
@@ -185,9 +183,9 @@ export function VenueForm() {
 
       <form className="form" onSubmit={onSubmit} noValidate>
         <section className="form-section">
-          <h2 className="form-section-title"><span className="step">01</span> Identitas</h2>
+          <h2 className="form-section-title"><span className="step">01</span> Tentang tempatnya</h2>
           <div className="field">
-            <label className="field-label" htmlFor="v-name">Nama venue</label>
+            <label className="field-label" htmlFor="v-name">Nama tempat</label>
             <input id="v-name" className="input" value={values.name} aria-invalid={inv('name')}
               onChange={(e) => set('name', e.target.value)} />
             {err('name')}
@@ -248,23 +246,23 @@ export function VenueForm() {
             onChange={(rows) => set('transitRows', rows)} />
           {err('transitAccess')}
           <div className="field">
-            <label className="field-label" htmlFor="v-transitNote">Catatan transit <span className="optional">(opsional)</span></label>
+            <label className="field-label" htmlFor="v-transitNote">Catatan transum <span className="optional">(opsional)</span></label>
             <input id="v-transitNote" className="input" maxLength={160} value={values.transitNote}
               onChange={(e) => set('transitNote', e.target.value)} />
           </div>
           <div className="field">
-            <label className="field-label" htmlFor="v-googleMapsUrl">Tautan listing Google Maps</label>
+            <label className="field-label" htmlFor="v-googleMapsUrl">Link Google Maps</label>
             <input id="v-googleMapsUrl" className="input" type="url" inputMode="url" placeholder="https://maps.app.goo.gl/…"
               value={values.googleMapsUrl} aria-invalid={inv('googleMapsUrl')}
               onChange={(e) => set('googleMapsUrl', e.target.value)} />
             <p className="field-hint">
-              Buka venue di Google Maps → Bagikan → Salin link.{' '}
+              Buka tempatnya di Google Maps → Bagikan → Salin link.{' '}
               {canSearch ? (
                 <ExternalLink className="text-link" href={buildSearchUrl({ ...values, district: values.district })}>
-                  Cari venue ini di Google Maps <Icon name="external" size={14} />
+                  Cari di Google Maps <Icon name="external" size={14} />
                 </ExternalLink>
               ) : (
-                <span>Isi nama dan alamat untuk membuka pencarian.</span>
+                <span>Isi nama & alamat dulu buat cari.</span>
               )}
             </p>
             {err('googleMapsUrl')}
@@ -272,25 +270,25 @@ export function VenueForm() {
         </section>
 
         <section className="form-section">
-          <h2 className="form-section-title"><span className="step">03</span> Perkiraan harga &amp; durasi</h2>
+          <h2 className="form-section-title"><span className="step">03</span> Harga &amp; durasi</h2>
           <label className="switch">
             <input id="v-priceUnknown" type="checkbox" checked={Boolean(values.priceUnknown)}
               onChange={(e) => set('priceUnknown', e.target.checked)} />
             <span>
               Harga belum diketahui
-              <span className="field-hint block">Perencana tidak akan menebak harga; venue ini ditandai "harga belum diketahui" di rencana.</span>
+              <span className="field-hint block">Nggak bakal ditebak, nanti ditandai "harga belum tahu".</span>
             </span>
           </label>
           {!values.priceUnknown && (
           <div className="field-row">
             <div className="field">
-              <label className="field-label" htmlFor="v-priceMin">Perkiraan min. /orang</label>
+              <label className="field-label" htmlFor="v-priceMin">Min. /orang</label>
               <CurrencyInput id="v-priceMin" value={values.priceMin} invalid={Boolean(errors.priceMin)}
                 onChange={(v) => set('priceMin', v)} />
               {err('priceMin')}
             </div>
             <div className="field">
-              <label className="field-label" htmlFor="v-priceMax">Perkiraan maks. /orang</label>
+              <label className="field-label" htmlFor="v-priceMax">Maks. /orang</label>
               <CurrencyInput id="v-priceMax" value={values.priceMax} invalid={Boolean(errors.priceMax)}
                 onChange={(v) => set('priceMax', v)} />
               {err('priceMax')}
@@ -298,7 +296,7 @@ export function VenueForm() {
           </div>
           )}
           <div className="field">
-            <label className="field-label" htmlFor="v-visitDurationMinutes">Lama kunjungan biasa (menit)</label>
+            <label className="field-label" htmlFor="v-visitDurationMinutes">Biasanya berapa lama (menit)</label>
             <input id="v-visitDurationMinutes" className="input" type="number" inputMode="numeric" min={15} max={720} step={15}
               value={values.visitDurationMinutes || ''} aria-invalid={inv('visitDurationMinutes')}
               onChange={(e) => set('visitDurationMinutes', Number(e.target.value) || 0)} />
@@ -307,22 +305,22 @@ export function VenueForm() {
         </section>
 
         <section className="form-section">
-          <h2 className="form-section-title"><span className="step">04</span> Metadata</h2>
+          <h2 className="form-section-title"><span className="step">04</span> Cocok buat apa?</h2>
           <div id="v-activities" tabIndex={-1}>
-            <MultiChipGroup<Activity> name="v-act" legend="Aktivitas" options={ACTIVITY_OPTIONS}
+            <MultiChipGroup<Activity> name="v-act" legend="Aktivitas" options={UI_ACTIVITY_OPTIONS}
               value={values.activities as Activity[]} error={errors.activities}
               onChange={(v) => set('activities', v)} />
           </div>
           <div id="v-vibes" tabIndex={-1}>
-            <MultiChipGroup<Vibe> name="v-vibe" legend="Vibe" options={VIBE_OPTIONS}
+            <MultiChipGroup<Vibe> name="v-vibe" legend="Vibes" options={UI_MOOD_OPTIONS}
               value={values.vibes as Vibe[]} error={errors.vibes} onChange={(v) => set('vibes', v)} />
           </div>
           <div className="field-row">
             <div className="field">
-              <label className="field-label" htmlFor="v-environment">Lingkungan</label>
+              <label className="field-label" htmlFor="v-environment">Tempatnya</label>
               <select id="v-environment" className="input select" value={values.environment}
                 onChange={(e) => set('environment', e.target.value as Environment)}>
-                {ENVIRONMENT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {UI_ENVIRONMENT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div className="field">
@@ -334,7 +332,7 @@ export function VenueForm() {
             </div>
           </div>
           <div className="field">
-            <label className="field-label" htmlFor="v-verifiedAt">Tanggal diverifikasi <span className="optional">(opsional)</span></label>
+            <label className="field-label" htmlFor="v-verifiedAt">Kapan dicek <span className="optional">(opsional)</span></label>
             <div className="input-with-action">
               <input id="v-verifiedAt" className="input" type="date" max={todayISO()} value={values.verifiedAt}
                 aria-invalid={inv('verifiedAt')} onChange={(e) => set('verifiedAt', e.target.value)} />
@@ -342,7 +340,7 @@ export function VenueForm() {
                 Hari ini
               </button>
             </div>
-            <p className="field-hint">Isi hanya jika kamu sudah mengecek detail venue ini di listing resminya.</p>
+            <p className="field-hint">Isi kalau kamu udah cek detailnya di Google Maps.</p>
             {err('verifiedAt')}
           </div>
         </section>

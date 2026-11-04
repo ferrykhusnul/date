@@ -1,6 +1,7 @@
 import { MODE_PROFILE, formatKm } from '../../engine/transport';
 import { buildRouteUrl, mapsQuery } from '../../lib/maps';
-import { LEG_MODE_OPTIONS, TRANSPORT_OPTIONS, labelOf } from '../../lib/options';
+import { LEG_MODE_OPTIONS } from '../../lib/options';
+import { transportLabel } from '../../lib/uiLabels';
 import type { LegMode, PlanLeg, Venue } from '../../types';
 import { ExternalLink } from '../ExternalLink';
 import { Icon } from '../Icon';
@@ -52,10 +53,10 @@ export function TransitionRow({
       <div className="transition-line" aria-hidden="true" />
       <div className="transition-body">
         <div className="transition-head">
-          <span className="transition-mode">{labelOf(TRANSPORT_OPTIONS, mode)}</span>
+          <span className="transition-mode">{transportLabel(mode)}</span>
           {leg && (
             <span className="muted small">
-              buffer {leg.bufferMinutes} menit (bukan estimasi rute)
+              ± {leg.bufferMinutes} menit (cek rute di Maps)
               {leg.straightLineMeters !== undefined && ` · ${formatKm(leg.straightLineMeters)} garis lurus`}
             </span>
           )}

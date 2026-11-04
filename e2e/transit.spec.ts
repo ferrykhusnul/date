@@ -25,6 +25,6 @@ test('public-transport plan: transit ranking, station info and route links', asy
   expect(routes[0]).toMatchObject({ o: 'Stasiun Uji Awal', d: 'Kafe Uji, Jl. Uji Coba kafe-uji, Kota Uji' });
   expect(routes[2].d).toBe('Rumah Uji');
   // Fares are not estimated; buffers are labelled as such.
-  await expect(page.locator('.transition-row').nth(1)).toContainText('bukan estimasi rute');
+  await expect(page.locator('.transition-row').nth(1)).toContainText('cek rute di Maps');
   await expect(page.locator('.budget-details')).toContainText('Tarif transum nggak dihitung');
 });

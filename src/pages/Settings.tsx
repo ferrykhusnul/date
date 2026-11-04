@@ -71,7 +71,7 @@ export function Settings() {
     try {
       const granted = await navigator.storage.persist();
       setPersistState(granted ? 'granted' : 'not-granted');
-      setDataStatus(granted ? 'Peramban setuju menyimpan data secara persisten.' : 'Peramban tidak memberi izin penyimpanan persisten. Tetap ekspor cadangan secara berkala.');
+      setDataStatus(granted ? 'Sip, datanya disimpan permanen ♡' : 'Browser-nya nggak ngizinin. Tetap rajin simpan cadangan ya.');
     } catch {
       setDataStatus('Permintaan penyimpanan persisten gagal.');
     }
@@ -79,20 +79,20 @@ export function Settings() {
 
   const onExportVenues = () => {
     downloadJson(JSON.stringify(realVenues, null, 2) + '\n', `venues-${new Date().toISOString().slice(0, 10)}.json`);
-    setDataStatus(`${realVenues.length} venue diekspor.`);
+    setDataStatus(`${realVenues.length} tempat diekspor.`);
   };
 
   const onClearPlans = () => {
-    if (window.confirm(`Hapus ${savedPlans.length} rencana tersimpan dari perangkat ini? Tindakan ini tidak dapat dibatalkan. Ekspor cadangan dulu bila ragu.`)) {
+    if (window.confirm(`Hapus ${savedPlans.length} date? Nggak bisa dibalikin — simpan cadangan dulu kalau ragu.`)) {
       clearSavedPlans();
-      setDataStatus('Semua rencana dihapus.');
+      setDataStatus('Semua date dihapus.');
     }
   };
 
   const onClearVenues = () => {
-    if (window.confirm(`Hapus ${localVenues.length} venue lokal dari perangkat ini? Tindakan ini tidak dapat dibatalkan. Ekspor cadangan dulu bila ragu.`)) {
+    if (window.confirm(`Hapus ${localVenues.length} tempat kamu? Nggak bisa dibalikin — simpan cadangan dulu kalau ragu.`)) {
       clearLocal();
-      setDataStatus('Venue lokal dihapus.');
+      setDataStatus('Tempat kamu dihapus.');
     }
   };
 
@@ -182,33 +182,30 @@ export function Settings() {
         <PrivacyNote />
 
         <dl className="detail-list compact">
-          <div><dt>Lokasi data</dt><dd>{storageAvailable() ? 'localStorage peramban ini' : 'Memori saja (penyimpanan tidak tersedia)'}</dd></div>
+          <div><dt>Disimpan di</dt><dd>{storageAvailable() ? 'Browser ini' : 'Sementara (penyimpanan nggak tersedia)'}</dd></div>
           <div><dt>Date tersimpan</dt><dd>{savedPlans.length} date</dd></div>
           <div><dt>Tempat kamu</dt><dd>{localVenues.length} tempat</dd></div>
           <div><dt>Tempat bawaan</dt><dd>{CURATED_VENUES.length} tempat</dd></div>
-          <div><dt>Ruang terpakai</dt><dd>± {formatBytes(usage)}</dd></div>
+          <div><dt>Kepakai</dt><dd>± {formatBytes(usage)}</dd></div>
           <div>
-            <dt>Penyimpanan persisten</dt>
-            <dd>{{ granted: 'Diizinkan', 'not-granted': 'Belum diizinkan', unsupported: 'Tidak didukung peramban', unknown: '…' }[persistState]}</dd>
+            <dt>Simpan permanen</dt>
+            <dd>{{ granted: 'Udah diizinin', 'not-granted': 'Belum', unsupported: 'Nggak didukung', unknown: '…' }[persistState]}</dd>
           </div>
         </dl>
 
         <div className="form-actions inline">
           <Link to="/cadangan" className="button button-primary"><Icon name="download" size={18} /> Cadangan</Link>
           {persistState === 'not-granted' && (
-            <button type="button" className="button button-ghost" onClick={onRequestPersist}>Minta penyimpanan persisten</button>
+            <button type="button" className="button button-ghost" onClick={onRequestPersist}>Minta simpan permanen</button>
           )}
           <button type="button" className="button button-ghost" onClick={onExportVenues} disabled={realVenues.length === 0}>Ekspor tempat (JSON)</button>
         </div>
-        <p className="field-hint">
-          "Ekspor venue" menghasilkan daftar venue saja, untuk disalin ke dataset terkurasi (<code>src/data/venues.ts</code>).
-          Untuk mencadangkan semua data, pakai "Cadangan &amp; impor".
-        </p>
+        <p className="field-hint">"Ekspor tempat" cuma berisi daftar tempat. Buat semuanya, pakai "Cadangan".</p>
 
         {quarantined.length > 0 && (
           <div className="quarantine">
-            <p className="eyebrow">Salinan data rusak ({quarantined.length})</p>
-            <p className="field-hint">Data yang tidak bisa dibaca disimpan di sini agar tidak hilang diam-diam.</p>
+            <p className="eyebrow">Data rusak ({quarantined.length})</p>
+            <p className="field-hint">Data yang rusak disimpan di sini biar nggak hilang.</p>
             <ul>
               {quarantined.map((k) => (
                 <li key={k}>

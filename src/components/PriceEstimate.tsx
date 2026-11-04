@@ -8,10 +8,10 @@ export function priceRangeText(min: number, max: number): string {
 }
 
 export function PriceEstimate({ min, max, unknown }: { min: number; max: number; unknown?: boolean }) {
-  if (unknown) return <span className="price-estimate price-unknown">Harga belum diketahui</span>;
+  if (unknown) return <span className="price-estimate price-unknown">Harga belum tahu</span>;
   return (
     <span className="price-estimate">
-      <span className="price-estimate-label">Perkiraan</span> {priceRangeText(min, max)}
+      <span className="price-estimate-label">Kira-kira</span> {priceRangeText(min, max)}
       <span className="price-estimate-unit"> /orang</span>
     </span>
   );
