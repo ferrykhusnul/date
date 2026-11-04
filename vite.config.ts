@@ -2,7 +2,16 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+declare const process: { env: Record<string, string | undefined> };
+
+/**
+ * Public path the app is served from. "/" for Vercel or a custom domain;
+ * GitHub Pages project sites build with DEPLOY_BASE=/<repo>/.
+ */
+const base = process.env.DEPLOY_BASE ?? '/';
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     VitePWA({
@@ -12,14 +21,14 @@ export default defineConfig({
       // Icons are already matched by globPatterns below; avoid duplicate precache entries.
       includeManifestIcons: false,
       manifest: {
-        id: '/',
+        id: base,
         name: 'Date Planner',
         short_name: 'Date Planner',
         description: 'Rencanakan kencan di Jakarta dan kota lain — rencana dan venue tersimpan di perangkatmu, bisa dipakai offline.',
         lang: 'id',
         dir: 'ltr',
-        start_url: '/',
-        scope: '/',
+        start_url: base,
+        scope: base,
         display: 'standalone',
         background_color: '#fdf7f5',
         theme_color: '#fdf7f5',

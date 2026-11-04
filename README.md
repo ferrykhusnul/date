@@ -258,6 +258,14 @@ CLI alternative: `npx vercel` (preview) and `npx vercel --prod`.
 Any static host works the same way if it serves `dist/` over HTTPS and
 falls back to `index.html` for unknown paths.
 
+## Deployment (GitHub Pages)
+
+`.github/workflows/deploy-pages.yml` builds the app with
+`DEPLOY_BASE=/<repo>/` and publishes it to
+`https://<user>.github.io/<repo>/` on every push to the default branch
+(after typecheck and unit tests). One-time setup: **Settings → Pages →
+Build and deployment → Source: GitHub Actions**.
+
 ## Installing on Android
 
 1. Open the deployed HTTPS URL in **Chrome**.
